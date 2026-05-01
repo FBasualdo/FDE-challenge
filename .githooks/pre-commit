@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# pre-commit — ruff on staged backend Python, tsc on staged dashboard TypeScript.
+set -e
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+DIM='\033[2m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+ROOT="$(git rev-parse --show-toplevel)"
+STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -z "$STAGED" ] && exit 0
+
+PY=$(echo "$STAGED" | grep -E '^backend/.*\.py$' || true)
+TS=$(echo "$STAGED" | grep -E '^dashboard/.*\.(ts|tsx)$' || true)
+
+if [ -z "$PY" ] && [ -z "$TS" ]; then
+  echo -e "${DIM}[pre-commit] no backend/dashboard changes — skipped${RESET}"
+  exit 0
+fi
+
+run_step() {
+  local label="$1"; shift
+  local out
+  if out=$("$@" 2>&1); then
+    echo -e "  ${GREEN}✓${RESET} ${label}"
+  else
+    echo -e "  ${RED}✗${RESET} ${BOLD}${label}${RESET}"
+    echo "$out" | sed 's/^/      /'
+    exit 1
+  fi
+}
+
+if [ -n "$PY" ]; then
+  cd "$ROOT/backend"
+  REL=$(echo "$PY" | sed 's|^backend/||')
+  run_step "ruff check --fix" uv run ruff check --fix $REL
+  cd "$ROOT"
+  echo "$PY" | xargs git add
+fi
+
+if [ -n "$TS" ]; then
+  cd "$ROOT/dashboard"
+  run_step "tsc --noEmit" npx tsc --noEmit
+  cd "$ROOT"
+fi

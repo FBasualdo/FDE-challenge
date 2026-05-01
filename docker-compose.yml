@@ -1,0 +1,93 @@
+# Local dev with production parity. Uses the same Dockerfiles deploy uses.
+#
+#   docker compose up --build      # first run / after deps change
+#   docker compose up              # subsequent runs
+#   docker compose up -d postgres  # spin up only the DB (for `uv run uvicorn` on host)
+#   docker compose down            # stop and clean
+#   docker compose logs -f backend # follow a service
+
+name: carrier-sales
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: carrier-sales-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carrier
+      POSTGRES_PASSWORD: carrier
+      POSTGRES_DB: carrier_sales
+    ports:
+      # Exposed on host so the backend can run via `uv run uvicorn` outside compose.
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - carrier-sales
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carrier -d carrier_sales"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: carrier-sales-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      # Compose internal DNS — overrides any DATABASE_URL in .env so the
+      # container always points at the postgres service, not localhost.
+      DATABASE_URL: postgresql+asyncpg://carrier:carrier@postgres:5432/carrier_sales
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - carrier-sales
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/check').read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* vars must be present at `next build` time. In compose
+        # the browser hits localhost:8000 directly. In Railway prod, set this
+        # to the backend internal URL.
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: carrier-sales-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - carrier-sales
+
+networks:
+  carrier-sales:
+    driver: bridge
+
+volumes:
+  postgres-data:

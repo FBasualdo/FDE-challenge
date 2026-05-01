@@ -1,0 +1,51 @@
+# Backend .dockerignore — keep build context small: only what the Dockerfile copies.
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments — installed inside the container, not copied in
+.venv/
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+app.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Environment files — provided via docker-compose / Railway env vars
+.env
+.env.local
+.env.*.local
+
+# Tests / docs / CI artifacts
+tests/
+docs/
+.github/
+
+# Docker self
+Dockerfile
+.dockerignore
+
+# Top-level repo files that aren't part of the backend
+../dashboard/
+../docs/
+../.claude/
