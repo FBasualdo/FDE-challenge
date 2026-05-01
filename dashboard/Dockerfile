@@ -17,8 +17,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
-    npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 # ─── Stage 2: builder ─────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION} AS builder
