@@ -42,6 +42,24 @@ async def verify_carrier(
     return await service.verify_carrier(session, request)
 
 
+@router.get("/carriers/verify", response_model=VerifyCarrierResponse)
+async def verify_carrier_get(
+    session: SessionDep,
+    mc_number: Annotated[str, Query(description="Carrier MC number, with or without 'MC' prefix")],
+    _: None = RequireApiKey,
+) -> VerifyCarrierResponse:
+    # GET variant for clients (e.g. HappyRobot Action nodes) that only emit
+    # query strings. Same behavior as the POST endpoint.
+    if not mc_number.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="mc_number is required",
+        )
+    return await service.verify_carrier(
+        session, VerifyCarrierRequest(mc_number=mc_number)
+    )
+
+
 @router.get("/loads/search", response_model=SearchLoadsResponse)
 async def search_loads(
     session: SessionDep,
