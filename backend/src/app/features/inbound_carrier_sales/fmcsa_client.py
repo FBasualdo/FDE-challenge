@@ -9,11 +9,14 @@ Two modes:
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import httpx
 
 from src.settings import get_settings
+
+logger = logging.getLogger("carrier_sales.fmcsa")
 
 _FMCSA_TIMEOUT_SECONDS = 5.0
 _FMCSA_BASE_URL = "https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number"
@@ -34,11 +37,16 @@ def _is_mocked() -> bool:
 async def verify_mc(mc_number: str) -> dict[str, Any]:
     """Return a normalized dict the service layer can map onto VerifyCarrierResponse."""
     cleaned = _strip_mc_prefix(mc_number)
+    mode = "mock" if _is_mocked() else "live"
+    logger.info("verify_mc start mc=%s mode=%s", cleaned, mode)
 
-    if _is_mocked():
-        return _mock_verify(cleaned)
+    result = _mock_verify(cleaned) if _is_mocked() else await _live_verify(cleaned)
 
-    return await _live_verify(cleaned)
+    logger.info(
+        "verify_mc done mc=%s eligible=%s carrier=%r reason=%r",
+        cleaned, result.get("eligible"), result.get("carrier_name"), result.get("reason"),
+    )
+    return result
 
 
 def _mock_verify(mc_number: str) -> dict[str, Any]:

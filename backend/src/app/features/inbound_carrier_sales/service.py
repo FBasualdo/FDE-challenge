@@ -8,6 +8,7 @@ request, auto-closed) and avoids hidden context managers inside service code.
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -16,6 +17,8 @@ from typing import Any
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger("carrier_sales.service")
 
 from . import fmcsa_client
 from .models import CallORM, LoadORM, NegotiationRoundORM, VerificationORM
@@ -137,6 +140,10 @@ async def search_loads(
     rows = list((await session.execute(stmt)).scalars().all())
     total = len(rows)
     capped = rows[:MAX_LOADS_RETURNED]
+    logger.info(
+        "search_loads ref=%s origin=%r dest=%r equip=%r from=%s -> matches=%d returned=%d",
+        reference_number, origin, destination, equipment_type, pickup_date_from, total, len(capped),
+    )
     return SearchLoadsResponse(
         matches_found=total,
         more_available=total > MAX_LOADS_RETURNED,
@@ -272,6 +279,10 @@ async def evaluate_negotiation(
     session.add(nrow)
     await session.commit()
 
+    logger.info(
+        "negotiate call=%s load=%s round=%d offer=%.2f loadboard=%.2f -> action=%s broker_price=%s",
+        request.call_id, request.load_id, round_n, offer, loadboard, response.action, broker_price,
+    )
     return response
 
 
@@ -322,6 +333,10 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
     result = await session.execute(stmt)
     created = bool(result.scalar_one())
     await session.commit()
+    logger.info(
+        "ingest_call call=%s outcome=%s sentiment=%s created=%s",
+        request.call_id, request.outcome.value, request.sentiment.value, created,
+    )
     return created
 
 
