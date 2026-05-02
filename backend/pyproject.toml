@@ -15,4 +15,15 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff==0.14.5",
+    "black==25.11.0",
+    "isort==7.0.0",
 ]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["src"]

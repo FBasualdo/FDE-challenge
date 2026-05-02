@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# pre-commit — ruff on staged backend Python, tsc on staged dashboard TypeScript.
+# pre-commit — backend: isort + black + ruff; dashboard: tsc + lint.
+# Each tool runs only on the files staged for THIS commit, then re-stages
+# the formatter outputs so the commit captures the polished files.
 set -e
 
 GREEN='\033[0;32m'
@@ -32,16 +34,25 @@ run_step() {
   fi
 }
 
+# ─── Backend ──────────────────────────────────────────────────────────────────
 if [ -n "$PY" ]; then
   cd "$ROOT/backend"
   REL=$(echo "$PY" | sed 's|^backend/||')
+  # isort first (orders imports), then black (reformats body), then ruff
+  # (catches remaining lint). Order matters: black would otherwise undo
+  # isort's grouping decisions.
+  run_step "isort"           uv run isort $REL
+  run_step "black"           uv run black --quiet $REL
   run_step "ruff check --fix" uv run ruff check --fix $REL
   cd "$ROOT"
+  # Re-stage formatter output so the commit captures it.
   echo "$PY" | xargs git add
 fi
 
+# ─── Dashboard ────────────────────────────────────────────────────────────────
 if [ -n "$TS" ]; then
   cd "$ROOT/dashboard"
   run_step "tsc --noEmit" npx tsc --noEmit
+  run_step "next lint"    npx next lint --quiet
   cd "$ROOT"
 fi
