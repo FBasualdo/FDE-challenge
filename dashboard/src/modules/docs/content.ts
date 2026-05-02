@@ -183,12 +183,4 @@ BASE_URL=http://localhost:8000 API_KEY=$API_KEY \\
 - \`backend/src/app/built_in/\` — reusable infrastructure (auth, health, llm). Don't put project-specific logic here.
 - \`backend/src/app/features/\` — project features. Each one is its own module with \`router.py\` (thin), \`service.py\` (logic), \`schemas.py\` (Pydantic), \`models.py\` (SQLAlchemy ORM, optional). Routers auto-discovered by \`bootstrap.py\` — no manual wiring.
 - \`dashboard/src/core/\` — shared layout, auth, API client. \`dashboard/src/modules/\` — feature components grouped by section.
-
----
-
-## What's next
-
-- 30-day roadmap: outbound calling, SMS follow-up for missed offers, lane forecasting, multi-broker tenancy.
-- Test coverage on the negotiation engine.
-- Lane heat trend backfill for the analytics section once we have ≥4 weeks of data.
 `
