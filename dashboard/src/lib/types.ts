@@ -164,6 +164,7 @@ export interface MetricsSummary {
     bookings: number
     booking_rate: number | null
     total_revenue: number
+    revenue_per_call: number
   }>
 }
 

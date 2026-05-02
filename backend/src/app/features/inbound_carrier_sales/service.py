@@ -555,11 +555,15 @@ SELECT
     COALESCE(lvn.carrier_name, lcn.carrier_name) AS carrier_name,
     agg.calls,
     agg.bookings,
-    agg.total_revenue
+    agg.total_revenue,
+    -- Revenue per call: how much money each ring brought in on average.
+    -- Surfaces high-ROI carriers (book quickly at strong rates) over the
+    -- ones who just call a lot. Zero when no calls (defensive).
+    (agg.total_revenue / NULLIF(agg.calls, 0)) AS revenue_per_call
 FROM agg
 LEFT JOIN latest_verification_name lvn ON lvn.mc = agg.mc
 LEFT JOIN latest_call_name lcn ON lcn.mc = agg.mc
-ORDER BY agg.calls DESC, agg.bookings DESC
+ORDER BY revenue_per_call DESC NULLS LAST, agg.calls DESC, agg.bookings DESC
 LIMIT 5
 """
 
@@ -583,6 +587,7 @@ async def _fetch_top_carriers(session: AsyncSession) -> list[TopCarrier]:
     for r in rows:
         calls = int(r["calls"] or 0)
         bookings = int(r["bookings"] or 0)
+        total_revenue = round(float(r["total_revenue"] or 0), 2)
         out.append(
             TopCarrier(
                 mc_number=r["mc_number"],
@@ -590,7 +595,8 @@ async def _fetch_top_carriers(session: AsyncSession) -> list[TopCarrier]:
                 calls=calls,
                 bookings=bookings,
                 booking_rate=round(bookings / calls, 4) if calls else None,
-                total_revenue=round(float(r["total_revenue"] or 0), 2),
+                total_revenue=total_revenue,
+                revenue_per_call=round(total_revenue / calls, 2) if calls else 0.0,
             )
         )
     return out

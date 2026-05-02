@@ -264,6 +264,7 @@ class TopCarrier(BaseModel):
     bookings: int
     booking_rate: float | None = None
     total_revenue: float
+    revenue_per_call: float
 
 
 class MetricsSummaryResponse(BaseModel):

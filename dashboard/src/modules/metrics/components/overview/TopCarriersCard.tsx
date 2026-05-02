@@ -13,9 +13,9 @@ interface Props {
 }
 
 /**
- * Top 5 carriers by conversational call count, with their booking rate and
- * total revenue. Replaces the noisy first-time-vs-repeat split — at POC
- * volume, naming the top callers is more useful than splitting the cohort.
+ * Top 5 carriers ranked by revenue per call (income / calls made). Surfaces
+ * high-ROI carriers — those who book quickly at strong rates — over carriers
+ * who just call a lot without closing.
  */
 export function TopCarriersCard({ data }: Props) {
   const rows = data ?? []
@@ -26,6 +26,9 @@ export function TopCarriersCard({ data }: Props) {
         <CardTitle className="flex items-center gap-2">
           <Trophy className="h-4 w-4 text-muted-foreground" />
           Top 5 carriers
+          <span className="ml-auto text-[11px] font-normal text-muted-foreground">
+            by revenue / call
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -47,17 +50,21 @@ export function TopCarriersCard({ data }: Props) {
                     {c.carrier_name ?? 'Unknown carrier'}
                   </span>
                   <span className="font-mono text-[11px] text-muted-foreground">
-                    MC {c.mc_number} · {formatNumber(c.calls)} call{c.calls === 1 ? '' : 's'}
+                    MC {c.mc_number} · {formatNumber(c.calls)} call{c.calls === 1 ? '' : 's'} ·{' '}
+                    {formatPercent(c.booking_rate)} booked
                   </span>
                 </Link>
-                <div className="flex shrink-0 items-center gap-4">
-                  <span
-                    className="font-mono text-xs tabular-nums text-[var(--status-positive)]"
-                    title={`${c.bookings} of ${c.calls} calls booked`}
-                  >
-                    {formatPercent(c.booking_rate)}
+                <div
+                  className="flex shrink-0 flex-col items-end gap-0.5"
+                  title={`Total revenue: $${c.total_revenue.toLocaleString()}`}
+                >
+                  <MoneyCell
+                    value={c.revenue_per_call}
+                    className="text-sm font-semibold"
+                  />
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    per call
                   </span>
-                  <MoneyCell value={c.total_revenue} />
                 </div>
               </li>
             ))}

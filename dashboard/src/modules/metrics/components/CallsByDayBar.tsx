@@ -91,7 +91,7 @@ export function CallsByDayBar({ data }: Props) {
                 <Bar
                   dataKey="others"
                   stackId="a"
-                  fill="var(--muted)"
+                  fill="var(--chart-4)"
                   radius={[6, 6, 0, 0]}
                 />
               </BarChart>
