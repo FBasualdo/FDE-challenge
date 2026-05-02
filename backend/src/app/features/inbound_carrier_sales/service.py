@@ -20,8 +20,6 @@ from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-logger = logging.getLogger("carrier_sales.service")
-
 from . import fmcsa_client
 from .models import CallORM, LoadORM, NegotiationRoundORM, VerificationORM
 from .schemas import (
@@ -40,6 +38,8 @@ from .schemas import (
     VerifyCarrierRequest,
     VerifyCarrierResponse,
 )
+
+logger = logging.getLogger("carrier_sales.service")
 
 MAX_LOADS_RETURNED = 5
 
@@ -336,6 +336,7 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
         "carrier": carrier_payload,
         "load": load_payload,
         "negotiation": negotiation_payload,
+        "analysis": request.analysis,
         "outcome": request.outcome.value,
         "sentiment": request.sentiment.value,
         "transcript": request.transcript,

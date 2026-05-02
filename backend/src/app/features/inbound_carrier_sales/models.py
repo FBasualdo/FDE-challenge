@@ -107,6 +107,7 @@ class CallORM(Base):
     carrier: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     load: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     negotiation: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    analysis: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     outcome: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     sentiment: Mapped[str] = mapped_column(String(16), nullable=False)

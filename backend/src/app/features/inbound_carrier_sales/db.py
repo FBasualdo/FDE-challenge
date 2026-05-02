@@ -16,7 +16,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, AsyncIterator
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -73,6 +73,11 @@ async def init_db() -> None:
 
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Bridge migrations until Alembic lands in v2. `create_all` only adds
+        # tables that don't exist — it never alters existing ones — so new
+        # columns must be opened here. Each statement is idempotent.
+        for stmt in _PENDING_MIGRATIONS:
+            await conn.execute(text(stmt))
 
     async with _SessionLocal() as session:
         existing = (
@@ -80,6 +85,11 @@ async def init_db() -> None:
         ).scalar_one()
         if existing == 0:
             await _seed_loads(session)
+
+
+_PENDING_MIGRATIONS: tuple[str, ...] = (
+    "ALTER TABLE calls ADD COLUMN IF NOT EXISTS analysis JSONB",
+)
 
 
 async def _seed_loads(session: AsyncSession) -> None:

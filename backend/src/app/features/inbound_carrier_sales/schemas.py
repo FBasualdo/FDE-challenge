@@ -133,8 +133,13 @@ class IngestCallRequest(BaseModel):
     carrier: CallCarrier | None = None
     load: CallLoad | None = None
     negotiation: CallNegotiation | None = None
-    outcome: CallOutcome
-    sentiment: CallSentiment
+    # outcome and sentiment can also be supplied inside `analysis` (Extract
+    # node output). The model_validator below promotes them to the root if
+    # missing here. Marked Optional so Pydantic doesn't 422 before we get a
+    # chance to look in `analysis`.
+    outcome: CallOutcome | None = None
+    sentiment: CallSentiment | None = None
+    analysis: dict[str, Any] | None = None
     transcript: str | None = Field(default=None, max_length=200_000)
     recording_url: str | None = Field(default=None, max_length=2_048)
 
@@ -155,8 +160,21 @@ class IngestCallRequest(BaseModel):
             return v[0] if v else None
         return v
 
+    @field_validator("analysis", mode="before")
+    @classmethod
+    def _coerce_analysis(cls, v: Any) -> Any:
+        if v is None or isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, dict) else None
+            except (ValueError, TypeError):
+                return None
+        return None
+
     @model_validator(mode="after")
-    def _fill_timestamps(self) -> "IngestCallRequest":
+    def _fill_timestamps_and_promote_from_analysis(self) -> "IngestCallRequest":
         # Defaults for callers (e.g. HappyRobot tools) that don't have call
         # start/end as platform variables. We synthesize a window from the
         # duration so calls_by_day still bucketizes them correctly.
@@ -168,6 +186,34 @@ class IngestCallRequest(BaseModel):
             self.started_at = self.ended_at - timedelta(seconds=self.duration_seconds or 0)
         elif self.ended_at is None:
             self.ended_at = self.started_at + timedelta(seconds=self.duration_seconds or 0)
+
+        # Promote outcome / sentiment from analysis when missing at root.
+        # Lets the bot ship the Extract node's output as a single nested
+        # block instead of duplicating fields at the top level.
+        if self.analysis:
+            if self.outcome is None and (a_outcome := self.analysis.get("outcome")):
+                try:
+                    self.outcome = CallOutcome(a_outcome)
+                except ValueError as e:
+                    raise ValueError(
+                        f"analysis.outcome={a_outcome!r} is not a valid outcome tag"
+                    ) from e
+            if self.sentiment is None and (a_sentiment := self.analysis.get("sentiment")):
+                try:
+                    self.sentiment = CallSentiment(a_sentiment)
+                except ValueError as e:
+                    raise ValueError(
+                        f"analysis.sentiment={a_sentiment!r} is not a valid sentiment tag"
+                    ) from e
+
+        if self.outcome is None:
+            raise ValueError(
+                "outcome is required (either at top level or inside analysis.outcome)"
+            )
+        if self.sentiment is None:
+            raise ValueError(
+                "sentiment is required (either at top level or inside analysis.sentiment)"
+            )
         return self
 
 
