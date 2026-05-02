@@ -10,7 +10,7 @@ Both gated with `RequireUser` (dashboard JWT). The voice agent's
 from __future__ import annotations
 
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +32,8 @@ router = APIRouter(tags=["Dashboard Loads"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 # Column spec shared by the export endpoint. Order = column order in the sheet.
+# `is_booked` renders as the human label "Booked" / "Available" — set in
+# the service's _row_to_export_dict so the spreadsheet stays self-explanatory.
 _LOADS_COLUMNS: list[tuple[str, str]] = [
     ("load_id", "Load ID"),
     ("origin", "Origin"),
@@ -48,6 +50,11 @@ _LOADS_COLUMNS: list[tuple[str, str]] = [
     ("notes", "Notes"),
     ("created_at", "Created At"),
     ("pitch_summary", "Pitch Summary"),
+    ("is_booked", "Status"),
+    ("booked_at", "Booked At"),
+    ("booked_by_mc", "Booked By (MC)"),
+    ("booked_by_call_id", "Booked Call ID"),
+    ("booked_agreed_rate", "Agreed Rate"),
 ]
 
 
@@ -60,6 +67,7 @@ async def list_catalog(
     equipment_type: Annotated[str | None, Query()] = None,
     pickup_date_from: Annotated[date | None, Query()] = None,
     pickup_date_to: Annotated[date | None, Query()] = None,
+    status: Annotated[Literal["all", "available", "booked"], Query()] = "all",
     cursor: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> LoadCatalogResponse:
@@ -70,6 +78,7 @@ async def list_catalog(
         equipment_type=equipment_type,
         pickup_date_from=pickup_date_from,
         pickup_date_to=pickup_date_to,
+        status=status,
         cursor=cursor,
         limit=limit,
     )
@@ -84,6 +93,7 @@ async def export_catalog(
     equipment_type: Annotated[str | None, Query()] = None,
     pickup_date_from: Annotated[date | None, Query()] = None,
     pickup_date_to: Annotated[date | None, Query()] = None,
+    status_filter: Annotated[Literal["all", "available", "booked"], Query(alias="status")] = "all",
 ) -> Response:
     rows, capped = await service.fetch_catalog_for_export(
         session,
@@ -92,6 +102,7 @@ async def export_catalog(
         equipment_type=equipment_type,
         pickup_date_from=pickup_date_from,
         pickup_date_to=pickup_date_to,
+        status=status_filter,
         cap=EXPORT_ROW_CAP,
     )
     if capped:

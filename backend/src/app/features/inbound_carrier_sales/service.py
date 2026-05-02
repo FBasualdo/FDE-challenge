@@ -141,6 +141,7 @@ async def search_loads(
     destination: str | None,
     equipment_type: str | None,
     pickup_date_from: date | None,
+    include_booked: bool = False,
 ) -> SearchLoadsResponse:
     stmt = select(LoadORM)
     if reference_number:
@@ -157,18 +158,36 @@ async def search_loads(
     if pickup_date_from:
         cutoff = datetime.combine(pickup_date_from, datetime.min.time(), tzinfo=timezone.utc)
         stmt = stmt.where(LoadORM.pickup_datetime >= cutoff)
+
+    # A load is "booked" the moment a call gets persisted with outcome='Booked'
+    # carrying that load_id in its JSONB snapshot. Exclude those by default —
+    # the voice agent must not re-pitch already-booked freight. Operators can
+    # opt back in via include_booked=True for replays/testing.
+    if not include_booked:
+        booked_subq = (
+            select(CallORM.call_id)
+            .where(
+                CallORM.outcome == "Booked",
+                CallORM.load["load_id"].astext == LoadORM.load_id,
+            )
+            .correlate(LoadORM)
+        )
+        stmt = stmt.where(~booked_subq.exists())
+
     stmt = stmt.order_by(LoadORM.pickup_datetime.asc()).limit(MAX_LOADS_RETURNED + 1)
 
     rows = list((await session.execute(stmt)).scalars().all())
     more = len(rows) > MAX_LOADS_RETURNED
     capped = rows[:MAX_LOADS_RETURNED]
     logger.info(
-        "search_loads ref=%s origin=%r dest=%r equip=%r from=%s -> returned=%d more=%s",
+        "search_loads ref=%s origin=%r dest=%r equip=%r from=%s include_booked=%s "
+        "-> returned=%d more=%s",
         reference_number,
         origin,
         destination,
         equipment_type,
         pickup_date_from,
+        include_booked,
         len(capped),
         more,
     )

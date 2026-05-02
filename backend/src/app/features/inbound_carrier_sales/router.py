@@ -69,6 +69,7 @@ async def search_loads(
     destination: Annotated[str | None, Query()] = None,
     equipment_type: Annotated[str | None, Query()] = None,
     pickup_date_from: Annotated[date | None, Query()] = None,
+    include_booked: Annotated[bool, Query()] = False,
     _: None = RequireApiKey,
 ) -> SearchLoadsResponse:
     if not any([reference_number, origin, destination, equipment_type, pickup_date_from]):
@@ -83,6 +84,7 @@ async def search_loads(
         destination=destination,
         equipment_type=equipment_type,
         pickup_date_from=pickup_date_from,
+        include_booked=include_booked,
     )
 
 
