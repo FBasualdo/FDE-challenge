@@ -1,7 +1,16 @@
 'use client'
 
 import useSWR from 'swr'
-import { Phone, CheckCircle2, TrendingUp, DollarSign, ListChecks, Percent } from 'lucide-react'
+import {
+  Phone,
+  CheckCircle2,
+  TrendingUp,
+  DollarSign,
+  ListChecks,
+  Percent,
+  Target,
+  ShieldOff,
+} from 'lucide-react'
 import { swrFetcher } from '@/lib/api'
 import { PageHeader } from '@/core/layout/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,6 +19,8 @@ import { KpiCard } from './KpiCard'
 import { OutcomesPie } from './OutcomesPie'
 import { SentimentBars } from './SentimentBars'
 import { CallsByDayLine } from './CallsByDayLine'
+import { RepeatFunnel } from './overview/RepeatFunnel'
+import { FirstTimeVsRepeatBars } from './overview/FirstTimeVsRepeatBars'
 import { formatMoney, formatNumber, formatPercent } from '@/lib/format'
 import type { MetricsSummary } from '@/lib/types'
 
@@ -19,16 +30,17 @@ export function MetricsPage() {
   return (
     <>
       <PageHeader
-        title="Metrics"
-        description="Aggregate KPIs across all agents and inbound calls."
+        title="Analytics — overview"
+        description="Aggregate KPIs across all agents and inbound calls. Drill into Carriers, Lanes, or Negotiation for the actionable cuts."
       />
 
       {error && <ErrorState title="Could not load metrics" error={error} onRetry={() => void mutate()} />}
 
       {isLoading && (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton className="h-28 w-full" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-20 w-full" />
             ))}
           </div>
@@ -38,7 +50,14 @@ export function MetricsPage() {
 
       {!isLoading && !error && data && (
         <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Repeat funnel + first-time vs repeat — top-of-page retention picture. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <RepeatFunnel data={data.repeat_funnel} />
+            <FirstTimeVsRepeatBars data={data.first_time_vs_repeat} />
+          </div>
+
+          {/* Top-line KPIs — 6 cards: total / booked / booking rate / revenue / R1 close / FMCSA killed. */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <KpiCard
               icon={Phone}
               label="Total calls"
@@ -61,6 +80,20 @@ export function MetricsPage() {
               label="Revenue negotiated"
               value={formatMoney(data.totals.total_revenue_negotiated)}
               tone="accent"
+            />
+            <KpiCard
+              icon={Target}
+              label="Round-1 close rate"
+              value={formatPercent(data.round_one_close_rate ?? null)}
+              hint="Booked in opening offer"
+              tone="positive"
+            />
+            <KpiCard
+              icon={ShieldOff}
+              label="FMCSA killed"
+              value={formatPercent(data.fmcsa_killed_rate ?? null)}
+              hint="Killed at verification"
+              tone="negative"
             />
           </div>
 

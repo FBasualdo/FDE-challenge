@@ -148,4 +148,91 @@ export interface MetricsSummary {
   }
   outcomes_distribution: Record<string, number>
   calls_by_day: Array<{ date: string; count: number; booked: number }>
+
+  // Analytics v2 extensions — see metrics plan §"Existing /metrics/summary extensions".
+  round_one_close_rate?: number | null
+  fmcsa_killed_rate?: number | null
+  first_time_vs_repeat?: {
+    first_time: { calls: number; booking_rate: number | null }
+    repeat: { calls: number; booking_rate: number | null }
+  }
+  repeat_funnel?: {
+    once: number
+    two_to_three: number
+    four_plus: number
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Analytics v2 — carrier / lane / negotiation
+// ---------------------------------------------------------------------------
+
+export type CarrierFlag = 'tire_kicker' | 'hostage' | 'top_repeat' | 'repeat_ineligible'
+
+export interface CarrierStats {
+  mc_number: string
+  carrier_name?: string | null
+  calls: number
+  conversational_calls: number
+  booked: number
+  booking_rate: number
+  avg_sentiment_score: number
+  /** Last ≤5 sentiments, oldest first. "P"=positive, "N"=neutral, "X"=negative. */
+  sentiment_trend: string[]
+  avg_quote_premium_pct?: number | null
+  premium_share_pct?: number | null
+  drop_rate: number
+  last_called_at: string
+  flags: CarrierFlag[]
+}
+
+export interface CarriersResponse {
+  items: CarrierStats[]
+  next_cursor?: string | null
+  total: number
+}
+
+export interface CarrierDetail {
+  mc_number: string
+  carrier_name?: string | null
+  total_calls: number
+  conversational_calls: number
+  booked: number
+  booking_rate: number
+  flags: CarrierFlag[]
+  recent_calls: CallListItem[]
+  sentiment_timeline: { at: string; sentiment: string }[]
+  verifications: Verification[]
+}
+
+export interface LaneStats {
+  origin: string
+  destination: string
+  calls: number
+  booked: number
+  booking_rate: number
+  avg_loadboard_rate?: number | null
+  avg_agreed_rate?: number | null
+  avg_margin_vs_lb_pct?: number | null
+  equipment_mix: Record<string, number>
+  calls_prev_window: number
+  trend: 'heating' | 'cooling' | 'flat'
+}
+
+export interface LanesResponse {
+  items: LaneStats[]
+}
+
+export interface NegotiationStats {
+  acceptance_by_round: { round: number; accepts: number; counters: number; rejects: number }[]
+  round_one_close_rate?: number | null
+  final_offer_success_rate?: number | null
+  gap_histogram_round1: { bucket: string; count: number }[]
+  money_left_on_table: {
+    total: number
+    avg_per_booked_call?: number | null
+    p50?: number | null
+    p90?: number | null
+    savings_count: number
+  }
 }
