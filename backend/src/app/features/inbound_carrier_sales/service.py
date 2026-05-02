@@ -9,6 +9,7 @@ request, auto-closed) and avoids hidden context managers inside service code.
 from __future__ import annotations
 
 import logging
+import re
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -120,6 +121,15 @@ def _row_to_load(row: LoadORM) -> Load:
     )
 
 
+_NON_ALNUM = re.compile(r"[^A-Z0-9]")
+
+
+def _normalize_ref(ref: str) -> str:
+    # Voice transcription may emit "LD1001", "ld 1001", "LD-1001", "L D 1001".
+    # Compare normalized forms so all of those match the canonical "LD-1001".
+    return _NON_ALNUM.sub("", ref.upper())
+
+
 async def search_loads(
     session: AsyncSession,
     *,
@@ -131,7 +141,10 @@ async def search_loads(
 ) -> SearchLoadsResponse:
     stmt = select(LoadORM)
     if reference_number:
-        stmt = stmt.where(LoadORM.load_id == reference_number)
+        normalized = _normalize_ref(reference_number)
+        stmt = stmt.where(
+            func.regexp_replace(func.upper(LoadORM.load_id), "[^A-Z0-9]", "", "g") == normalized
+        )
     if origin:
         stmt = stmt.where(func.lower(LoadORM.origin).contains(origin.lower()))
     if destination:
