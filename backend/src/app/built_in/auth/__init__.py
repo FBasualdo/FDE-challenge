@@ -1,5 +1,5 @@
-"""API key authentication."""
+"""Authentication dependencies."""
 
-from .dependencies import RequireApiKey
+from .dependencies import RequireApiKey, RequireUser
 
-__all__ = ["RequireApiKey"]
+__all__ = ["RequireApiKey", "RequireUser"]

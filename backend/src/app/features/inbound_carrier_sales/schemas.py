@@ -9,7 +9,6 @@ from typing import Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-
 # ---------------------------------------------------------------------------
 # 1. POST /carriers/verify
 # ---------------------------------------------------------------------------
@@ -207,9 +206,7 @@ class IngestCallRequest(BaseModel):
                     ) from e
 
         if self.outcome is None:
-            raise ValueError(
-                "outcome is required (either at top level or inside analysis.outcome)"
-            )
+            raise ValueError("outcome is required (either at top level or inside analysis.outcome)")
         if self.sentiment is None:
             raise ValueError(
                 "sentiment is required (either at top level or inside analysis.sentiment)"

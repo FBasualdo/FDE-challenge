@@ -24,8 +24,8 @@ from . import fmcsa_client
 from .models import CallORM, LoadORM, NegotiationRoundORM, VerificationORM
 from .schemas import (
     CallOutcome,
-    CallSentiment,
     CallsByDayEntry,
+    CallSentiment,
     EvaluateNegotiationRequest,
     EvaluateNegotiationResponse,
     IngestCallRequest,
@@ -154,17 +154,20 @@ async def search_loads(
     if pickup_date_from:
         cutoff = datetime.combine(pickup_date_from, datetime.min.time(), tzinfo=timezone.utc)
         stmt = stmt.where(LoadORM.pickup_datetime >= cutoff)
-    stmt = (
-        stmt.order_by(LoadORM.pickup_datetime.asc())
-        .limit(MAX_LOADS_RETURNED + 1)
-    )
+    stmt = stmt.order_by(LoadORM.pickup_datetime.asc()).limit(MAX_LOADS_RETURNED + 1)
 
     rows = list((await session.execute(stmt)).scalars().all())
     more = len(rows) > MAX_LOADS_RETURNED
     capped = rows[:MAX_LOADS_RETURNED]
     logger.info(
         "search_loads ref=%s origin=%r dest=%r equip=%r from=%s -> returned=%d more=%s",
-        reference_number, origin, destination, equipment_type, pickup_date_from, len(capped), more,
+        reference_number,
+        origin,
+        destination,
+        equipment_type,
+        pickup_date_from,
+        len(capped),
+        more,
     )
     return SearchLoadsResponse(
         matches_found=len(capped),
@@ -283,9 +286,7 @@ async def evaluate_negotiation(
     broker_price = (
         response.agreed_rate
         if response.action == "accept"
-        else response.counter_price
-        if response.action == "counter"
-        else response.final_offer
+        else response.counter_price if response.action == "counter" else response.final_offer
     )
 
     nrow = NegotiationRoundORM(
@@ -301,7 +302,13 @@ async def evaluate_negotiation(
 
     logger.info(
         "negotiate call=%s load=%s round=%d offer=%.2f loadboard=%.2f -> action=%s broker_price=%s",
-        request.call_id, request.load_id, round_n, offer, loadboard, response.action, broker_price,
+        request.call_id,
+        request.load_id,
+        round_n,
+        offer,
+        loadboard,
+        response.action,
+        broker_price,
     )
     return response
 
@@ -321,9 +328,7 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
     carrier_payload: dict[str, Any] | None = (
         request.carrier.model_dump() if request.carrier else None
     )
-    load_payload: dict[str, Any] | None = (
-        request.load.model_dump() if request.load else None
-    )
+    load_payload: dict[str, Any] | None = request.load.model_dump() if request.load else None
     negotiation_payload: dict[str, Any] | None = (
         request.negotiation.model_dump() if request.negotiation else None
     )
@@ -356,7 +361,10 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
     await session.commit()
     logger.info(
         "ingest_call call=%s outcome=%s sentiment=%s created=%s",
-        request.call_id, request.outcome.value, request.sentiment.value, created,
+        request.call_id,
+        request.outcome.value,
+        request.sentiment.value,
+        created,
     )
     return created
 
@@ -403,9 +411,7 @@ def _call_eligible(call: CallORM) -> bool | None:
 
 
 async def metrics_summary(session: AsyncSession) -> MetricsSummaryResponse:
-    calls = list(
-        (await session.execute(select(CallORM))).scalars().all()
-    )
+    calls = list((await session.execute(select(CallORM))).scalars().all())
 
     outcomes = _empty_outcome_distribution()
     sentiments = _empty_sentiment_distribution()

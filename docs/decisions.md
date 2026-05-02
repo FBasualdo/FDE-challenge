@@ -90,6 +90,84 @@ silent wide-open deployment from a missed env var.
 tool's headers). For multi-tenant production, swap to per-tenant keys or
 JWTs without changing endpoint signatures — just change the dependency body.
 
+## SEC-002 — Dashboard auth: argon2id + JWT (cookie OR bearer)
+
+**Context.** The dashboard needs human auth alongside the existing
+`X-API-Key` voice-agent surface. Browser code shouldn't see the shared API
+key, and tying every dashboard fetch to a static secret leaks it. Sessions
+need to work cross-origin for the dev split (frontend on Vercel/Railway,
+backend on Railway).
+
+**Decision.** Two parallel auth paths that coexist on the same FastAPI app:
+`RequireApiKey` (X-API-Key) for voice-agent endpoints stays untouched;
+`RequireUser` (JWT) for dashboard endpoints. Passwords hashed with argon2id
+(`argon2-cffi`, default params). JWTs are HS256, signed with `JWT_SECRET`,
+60-minute lifetime, no refresh in v1. `POST /auth/login` accepts email +
+password, returns the token in the body AND sets a `session` httpOnly +
+Secure (outside LOCAL) + SameSite=Lax cookie. `RequireUser` reads from
+either `Authorization: Bearer ...` or the cookie — whichever the caller
+sends. `POST /auth/logout` clears the cookie. `GET /auth/me` echoes the
+authenticated user.
+
+Bootstrap: there is no public registration. On first boot the lifespan
+hook calls `seed_admin_if_needed()` which inserts a single admin user
+when the table is empty and `SEED_ADMIN_EMAIL` + `SEED_ADMIN_PASSWORD`
+are both set. The settings boot guard refuses to start outside `LOCAL`
+without `JWT_SECRET`, mirroring the existing `API_KEY` guard.
+
+**Consequences.** Dashboard sessions are robust to XSS (cookie is
+httpOnly) while still allowing programmatic clients to use the bearer
+header. Admin-only access for v1 is fine for the POC; multi-user / RBAC
+slots in via a `roles` column without changing the dependency surface.
+Trade-off: argon2id is slower than bcrypt (~50–200ms per verify), which
+is intentional — login is rare. Choosing argon2id over bcrypt reflects
+current OWASP guidance.
+
+## API-002 — `agent_id` on calls + agents catalog
+
+**Context.** The v2 dashboard lists calls grouped by which voice agent
+produced them ("Inbound Carrier Sales" today, more later). `calls` had
+no agent attribution, so legacy rows would orphan when a second agent
+appears.
+
+**Decision.** Add `calls.agent_id VARCHAR(64) NOT NULL DEFAULT
+'inbound-carrier-sales'`, indexed. Add a small `agents` catalog table
+(`slug` PK, name, description, is_active) and a `GET /agents` endpoint
+behind `RequireUser`. The lifespan hook seeds the default
+`inbound-carrier-sales` agent if missing — idempotent. Migration uses the
+existing `_PENDING_MIGRATIONS` pattern: `ADD COLUMN IF NOT EXISTS` →
+backfill nulls → `SET NOT NULL` → create index. No Alembic yet (R-003
+still applies).
+
+**Consequences.** Existing `POST /calls` keeps working without sending
+`agent_id` — the column default fills it. New agents are a one-row insert
+into `agents` plus optionally tagging future ingest payloads with the
+slug. The dashboard's call list filter is a simple `WHERE agent_id = ?`.
+
+## API-003 — Dashboard call browsing endpoints
+
+**Context.** The dashboard needs paginated, filterable call browsing and
+a detail view that exposes negotiation rounds, FMCSA verification history,
+and the parsed tool-call audit trail from each call's transcript.
+
+**Decision.** New `dashboard_calls` feature module separate from the
+voice-agent ingest. `GET /calls` (RequireUser) supports cursor pagination
+by `started_at desc`, repeatable `outcome` / `sentiment` filters,
+`mc_number` exact match against the JSONB carrier blob, `date_from` /
+`date_to` window, and `q` ILIKE search on `transcript` + `call_id`.
+`GET /calls/{call_id}` returns the full call row, the load/carrier/
+negotiation JSONB, the negotiation rounds, recent verifications for that
+MC, and `tool_invocations` parsed on-the-fly from the stored transcript
+(no separate table). The transcript parser is defensive — malformed JSON
+returns `[]` rather than throwing.
+
+**Consequences.** The list query is one SQL with predicates pushed down;
+detail is two queries plus an in-process JSON walk. No new tables
+required for tool auditing. ILIKE is fine at POC scale; tsvector / GIN
+trigram is a v2 swap (R-008). The cursor encodes only `started_at`, so
+ties at exact same timestamp could skip rows — acceptable given the
+voice-agent only writes one row per call.
+
 ---
 
 # Roadmap (deferred from the audit pass)

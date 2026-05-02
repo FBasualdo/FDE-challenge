@@ -44,7 +44,10 @@ async def verify_mc(mc_number: str) -> dict[str, Any]:
 
     logger.info(
         "verify_mc done mc=%s eligible=%s carrier=%r reason=%r",
-        cleaned, result.get("eligible"), result.get("carrier_name"), result.get("reason"),
+        cleaned,
+        result.get("eligible"),
+        result.get("carrier_name"),
+        result.get("reason"),
     )
     return result
 
@@ -124,7 +127,9 @@ async def _live_verify(mc_number: str) -> dict[str, Any]:
     if response.status_code >= 500:
         logger.warning(
             "FMCSA upstream %d for mc=%s body[:200]=%r",
-            response.status_code, mc_number, response.text[:200],
+            response.status_code,
+            mc_number,
+            response.text[:200],
         )
         return {
             "eligible": False,
@@ -142,7 +147,9 @@ async def _live_verify(mc_number: str) -> dict[str, Any]:
         # carrier is invalid — surface the upstream issue and treat as unavailable.
         logger.error(
             "FMCSA client error %d for mc=%s body[:200]=%r",
-            response.status_code, mc_number, response.text[:200],
+            response.status_code,
+            mc_number,
+            response.text[:200],
         )
         return {
             "eligible": False,
@@ -205,13 +212,17 @@ def _normalize_fmcsa_payload(mc_number: str, payload: dict[str, Any]) -> dict[st
     else:
         allowed_to_operate = None
     status = carrier.get("statusCode") or carrier.get("status")
-    eligible = bool(allowed_to_operate) and (status is None or str(status).upper() in ("A", "ACTIVE"))
+    eligible = bool(allowed_to_operate) and (
+        status is None or str(status).upper() in ("A", "ACTIVE")
+    )
 
     return {
         "eligible": eligible,
         "mc_number": mc_number,
         "carrier_name": carrier.get("legalName") or carrier.get("dbaName"),
-        "dot_number": str(carrier.get("dotNumber")) if carrier.get("dotNumber") is not None else None,
+        "dot_number": (
+            str(carrier.get("dotNumber")) if carrier.get("dotNumber") is not None else None
+        ),
         "status": str(status) if status is not None else None,
         "allowed_to_operate": allowed_to_operate,
         "reason": None if eligible else "Carrier authority is not active",

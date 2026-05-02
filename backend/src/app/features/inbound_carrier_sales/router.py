@@ -58,9 +58,7 @@ async def verify_carrier_get(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="mc_number is required",
         )
-    return await service.verify_carrier(
-        session, VerifyCarrierRequest(mc_number=mc_number)
-    )
+    return await service.verify_carrier(session, VerifyCarrierRequest(mc_number=mc_number))
 
 
 @router.get("/loads/search", response_model=SearchLoadsResponse)

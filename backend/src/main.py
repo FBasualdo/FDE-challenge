@@ -61,7 +61,14 @@ app.add_middleware(
     allow_origins=[o.strip() for o in _settings.cors_origins.split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Cookie",
+        "X-API-Key",
+        "X-Requested-With",
+    ],
+    expose_headers=["X-Request-ID"],
 )
 
 
@@ -74,7 +81,11 @@ async def access_log_middleware(request: Request, call_next):
     elapsed_ms = (time.perf_counter() - start) * 1000
     access_logger.info(
         "%s %s %s %d %.1fms",
-        request_id, request.method, request.url.path, response.status_code, elapsed_ms,
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
     )
     response.headers["X-Request-ID"] = request_id
     return response
@@ -91,14 +102,20 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
     validation_logger.warning(
         "[%s] 422 %s %s — %d errors — body=%s",
-        request_id, request.method, request.url.path,
-        len(exc.errors()), json.dumps(body_repr, default=str)[:2000],
+        request_id,
+        request.method,
+        request.url.path,
+        len(exc.errors()),
+        json.dumps(body_repr, default=str)[:2000],
     )
     for err in exc.errors():
         validation_logger.warning(
             "[%s]   field=%s type=%s msg=%s input=%r",
-            request_id, ".".join(str(p) for p in err.get("loc", [])),
-            err.get("type"), err.get("msg"), err.get("input"),
+            request_id,
+            ".".join(str(p) for p in err.get("loc", [])),
+            err.get("type"),
+            err.get("msg"),
+            err.get("input"),
         )
 
     return JSONResponse(

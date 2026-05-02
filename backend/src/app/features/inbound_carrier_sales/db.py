@@ -22,7 +22,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 from src.settings import get_settings
 
-
 # ---------------------------------------------------------------------------
 # Declarative base
 # ---------------------------------------------------------------------------
@@ -69,6 +68,11 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 async def init_db() -> None:
     """Create tables if needed and seed loads on first boot. Idempotent."""
     # Import here so models are registered against Base before create_all runs.
+    from src.app.features.agents import models as agents_models  # noqa: F401
+    from src.app.features.agents.service import seed_default_agent_if_needed
+    from src.app.features.users import models as users_models  # noqa: F401
+    from src.app.features.users.service import seed_admin_if_needed
+
     from . import models  # noqa: F401
 
     async with _engine.begin() as conn:
@@ -86,9 +90,17 @@ async def init_db() -> None:
         if existing == 0:
             await _seed_loads(session)
 
+        await seed_default_agent_if_needed(session)
+        await seed_admin_if_needed(session)
+
 
 _PENDING_MIGRATIONS: tuple[str, ...] = (
     "ALTER TABLE calls ADD COLUMN IF NOT EXISTS analysis JSONB",
+    "ALTER TABLE calls ADD COLUMN IF NOT EXISTS agent_id VARCHAR(64) "
+    "DEFAULT 'inbound-carrier-sales'",
+    "UPDATE calls SET agent_id = 'inbound-carrier-sales' WHERE agent_id IS NULL",
+    "ALTER TABLE calls ALTER COLUMN agent_id SET NOT NULL",
+    "CREATE INDEX IF NOT EXISTS ix_calls_agent_id ON calls (agent_id)",
 )
 
 

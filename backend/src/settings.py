@@ -30,6 +30,12 @@ class _Settings(BaseSettings):
 
     api_key: str = Field(default="", alias="API_KEY")
 
+    jwt_secret: str = Field(default="", alias="JWT_SECRET")
+    jwt_expires_minutes: int = Field(default=60, alias="JWT_EXPIRES_MINUTES")
+
+    seed_admin_email: str = Field(default="", alias="SEED_ADMIN_EMAIL")
+    seed_admin_password: str = Field(default="", alias="SEED_ADMIN_PASSWORD")
+
     fmcsa_webkey: str = Field(default="", alias="FMCSA_WEBKEY")
     use_fmcsa_mock: bool = Field(default=False, alias="USE_FMCSA_MOCK")
 
@@ -65,12 +71,20 @@ class _Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_api_key_outside_local(self) -> "_Settings":
         # Boot-time guard: refuse to start in any non-LOCAL stage without an
-        # API_KEY. Without this, a misconfigured deployment runs wide-open.
-        if self.env_stage_name != "LOCAL" and not self.api_key:
-            raise ValueError(
-                f"API_KEY must be set when ENV_STAGE_NAME={self.env_stage_name}. "
-                "Refusing to boot in an authenticated environment without auth configured."
-            )
+        # API_KEY or JWT_SECRET. Without these, a misconfigured deployment
+        # runs wide-open (API_KEY) or hands out unsignable session tokens
+        # (JWT_SECRET).
+        if self.env_stage_name != "LOCAL":
+            if not self.api_key:
+                raise ValueError(
+                    f"API_KEY must be set when ENV_STAGE_NAME={self.env_stage_name}. "
+                    "Refusing to boot in an authenticated environment without auth configured."
+                )
+            if not self.jwt_secret:
+                raise ValueError(
+                    f"JWT_SECRET must be set when ENV_STAGE_NAME={self.env_stage_name}. "
+                    "Refusing to boot without a signing key for dashboard sessions."
+                )
         return self
 
 
