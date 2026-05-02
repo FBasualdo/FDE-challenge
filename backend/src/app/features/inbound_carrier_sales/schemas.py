@@ -263,8 +263,23 @@ class TopCarrier(BaseModel):
     calls: int
     bookings: int
     booking_rate: float | None = None
-    total_revenue: float
-    revenue_per_call: float
+
+
+class CarrierMargin(BaseModel):
+    """Per-carrier premium paid above the listed loadboard rate.
+
+    Only counts booked calls. `avg_premium_pct` is positive when the
+    broker paid above loadboard (margin loss), zero when it cleared at
+    listed, negative when the carrier accepted below listed (margin
+    saved). `total_premium_paid` aggregates the absolute dollars across
+    that carrier's bookings.
+    """
+
+    mc_number: str
+    carrier_name: str | None = None
+    bookings: int
+    avg_premium_pct: float
+    total_premium_paid: float
 
 
 class MetricsSummaryResponse(BaseModel):
@@ -277,3 +292,4 @@ class MetricsSummaryResponse(BaseModel):
     fmcsa_killed_rate: float | None = None
     repeat_funnel: RepeatFunnel | None = None
     top_carriers: list[TopCarrier] = []
+    carrier_margin: list[CarrierMargin] = []

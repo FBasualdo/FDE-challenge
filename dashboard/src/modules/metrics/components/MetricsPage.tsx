@@ -20,6 +20,7 @@ import { SentimentBars } from './SentimentBars'
 import { CallsByDayBar } from './CallsByDayBar'
 import { RepeatFunnel } from './overview/RepeatFunnel'
 import { TopCarriersCard } from './overview/TopCarriersCard'
+import { CarrierMarginCard } from './overview/CarrierMarginCard'
 import { formatMoney, formatNumber, formatPercent } from '@/lib/format'
 import type { MetricsSummary } from '@/lib/types'
 
@@ -49,10 +50,11 @@ export function MetricsPage() {
 
       {!isLoading && !error && data && (
         <div className="flex flex-col gap-6">
-          {/* Repeat funnel + top carriers — top-of-page relationship picture. */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Repeat funnel + top carriers + margin retention — relationship + profitability picture. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <RepeatFunnel data={data.repeat_funnel} />
             <TopCarriersCard data={data.top_carriers} />
+            <CarrierMarginCard data={data.carrier_margin} />
           </div>
 
           {/* 6 headline KPIs. Total/Booked combined into one card to free a slot. */}

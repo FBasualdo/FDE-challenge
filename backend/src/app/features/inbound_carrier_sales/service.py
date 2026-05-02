@@ -26,6 +26,7 @@ from .schemas import (
     CallOutcome,
     CallsByDayEntry,
     CallSentiment,
+    CarrierMargin,
     EvaluateNegotiationRequest,
     EvaluateNegotiationResponse,
     IngestCallRequest,
@@ -499,15 +500,17 @@ FROM overall, funnel
 
 
 _TOP_CARRIERS_SQL = """
--- Top 5 carriers by conversational call count. Excludes Not Eligible
--- (same definition as the repeat funnel: those calls never got pitched).
--- Carrier name source-of-truth = latest verifications.carrier_name; falls
--- back to the most recent calls.carrier->>'carrier_name' for that MC.
+-- Top 5 carriers by total bookings, then booking rate, then call volume.
+-- Frame: a broker wants the carriers who close the most loads with the
+-- highest hit-rate; the carriers who call a lot but never book are
+-- noise. Excludes Not Eligible (same definition as the repeat funnel:
+-- those calls never got pitched). Carrier name source-of-truth = latest
+-- verifications.carrier_name; falls back to the most recent
+-- calls.carrier->>'carrier_name' for that MC.
 WITH conv AS (
     SELECT
         carrier->>'mc_number' AS mc,
         outcome,
-        negotiation,
         carrier,
         started_at
     FROM calls
@@ -519,16 +522,7 @@ agg AS (
     SELECT
         mc,
         COUNT(*) AS calls,
-        COUNT(*) FILTER (WHERE outcome = 'Booked') AS bookings,
-        COALESCE(
-            SUM(
-                CASE WHEN outcome = 'Booked'
-                     THEN (negotiation->>'final_agreed_rate')::numeric
-                     ELSE 0
-                END
-            ),
-            0
-        ) AS total_revenue
+        COUNT(*) FILTER (WHERE outcome = 'Booked') AS bookings
     FROM conv
     GROUP BY mc
 ),
@@ -555,15 +549,73 @@ SELECT
     COALESCE(lvn.carrier_name, lcn.carrier_name) AS carrier_name,
     agg.calls,
     agg.bookings,
-    agg.total_revenue,
-    -- Revenue per call: how much money each ring brought in on average.
-    -- Surfaces high-ROI carriers (book quickly at strong rates) over the
-    -- ones who just call a lot. Zero when no calls (defensive).
-    (agg.total_revenue / NULLIF(agg.calls, 0)) AS revenue_per_call
+    (agg.bookings::numeric / NULLIF(agg.calls, 0)) AS booking_rate
 FROM agg
 LEFT JOIN latest_verification_name lvn ON lvn.mc = agg.mc
 LEFT JOIN latest_call_name lcn ON lcn.mc = agg.mc
-ORDER BY revenue_per_call DESC NULLS LAST, agg.calls DESC, agg.bookings DESC
+ORDER BY agg.bookings DESC, booking_rate DESC NULLS LAST, agg.calls DESC
+LIMIT 5
+"""
+
+
+_CARRIER_MARGIN_SQL = """
+-- Per-carrier margin retention on booked calls only. Premium = how much
+-- the broker paid ABOVE the listed loadboard rate (positive = margin
+-- loss, zero = clean clear, negative = carrier closed below listed).
+-- Lower is better for the broker. Top 5 by lowest avg premium %, with
+-- a tiebreaker on bookings (more data = more trust in the average).
+WITH booked AS (
+    SELECT
+        carrier->>'mc_number' AS mc,
+        carrier,
+        (negotiation->>'final_agreed_rate')::numeric AS final_rate,
+        (load->>'loadboard_rate')::numeric AS listed_rate,
+        started_at
+    FROM calls
+    WHERE outcome = 'Booked'
+      AND carrier->>'mc_number' IS NOT NULL
+      AND carrier->>'mc_number' <> ''
+      AND (negotiation->>'final_agreed_rate') IS NOT NULL
+      AND (load->>'loadboard_rate') IS NOT NULL
+      AND (load->>'loadboard_rate')::numeric > 0
+),
+agg AS (
+    SELECT
+        mc,
+        COUNT(*) AS bookings,
+        AVG((final_rate - listed_rate) / listed_rate) AS avg_premium_pct,
+        SUM(final_rate - listed_rate) AS total_premium_paid
+    FROM booked
+    GROUP BY mc
+),
+latest_call_name AS (
+    SELECT DISTINCT ON (mc)
+        mc,
+        carrier->>'carrier_name' AS carrier_name
+    FROM booked
+    WHERE carrier->>'carrier_name' IS NOT NULL
+      AND carrier->>'carrier_name' <> ''
+    ORDER BY mc, started_at DESC
+),
+latest_verification_name AS (
+    SELECT DISTINCT ON (mc_number)
+        mc_number AS mc,
+        carrier_name
+    FROM verifications
+    WHERE carrier_name IS NOT NULL
+      AND carrier_name <> ''
+    ORDER BY mc_number, checked_at DESC
+)
+SELECT
+    agg.mc AS mc_number,
+    COALESCE(lvn.carrier_name, lcn.carrier_name) AS carrier_name,
+    agg.bookings,
+    agg.avg_premium_pct,
+    agg.total_premium_paid
+FROM agg
+LEFT JOIN latest_verification_name lvn ON lvn.mc = agg.mc
+LEFT JOIN latest_call_name lcn ON lcn.mc = agg.mc
+ORDER BY agg.avg_premium_pct ASC, agg.bookings DESC
 LIMIT 5
 """
 
@@ -587,7 +639,6 @@ async def _fetch_top_carriers(session: AsyncSession) -> list[TopCarrier]:
     for r in rows:
         calls = int(r["calls"] or 0)
         bookings = int(r["bookings"] or 0)
-        total_revenue = round(float(r["total_revenue"] or 0), 2)
         out.append(
             TopCarrier(
                 mc_number=r["mc_number"],
@@ -595,8 +646,22 @@ async def _fetch_top_carriers(session: AsyncSession) -> list[TopCarrier]:
                 calls=calls,
                 bookings=bookings,
                 booking_rate=round(bookings / calls, 4) if calls else None,
-                total_revenue=total_revenue,
-                revenue_per_call=round(total_revenue / calls, 2) if calls else 0.0,
+            )
+        )
+    return out
+
+
+async def _fetch_carrier_margin(session: AsyncSession) -> list[CarrierMargin]:
+    rows = (await session.execute(text(_CARRIER_MARGIN_SQL))).mappings().all()
+    out: list[CarrierMargin] = []
+    for r in rows:
+        out.append(
+            CarrierMargin(
+                mc_number=r["mc_number"],
+                carrier_name=r["carrier_name"],
+                bookings=int(r["bookings"] or 0),
+                avg_premium_pct=round(float(r["avg_premium_pct"] or 0), 4),
+                total_premium_paid=round(float(r["total_premium_paid"] or 0), 2),
             )
         )
     return out
@@ -689,6 +754,7 @@ async def metrics_summary(session: AsyncSession) -> MetricsSummaryResponse:
         four_plus=int(ext.get("four_plus") or 0),
     )
     top_carriers = await _fetch_top_carriers(session)
+    carrier_margin = await _fetch_carrier_margin(session)
 
     return MetricsSummaryResponse(
         totals=MetricsTotals(
@@ -716,4 +782,5 @@ async def metrics_summary(session: AsyncSession) -> MetricsSummaryResponse:
         fmcsa_killed_rate=fmcsa_killed_rate,
         repeat_funnel=repeat_funnel,
         top_carriers=top_carriers,
+        carrier_margin=carrier_margin,
     )

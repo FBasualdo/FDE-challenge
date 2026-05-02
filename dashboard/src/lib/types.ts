@@ -163,8 +163,13 @@ export interface MetricsSummary {
     calls: number
     bookings: number
     booking_rate: number | null
-    total_revenue: number
-    revenue_per_call: number
+  }>
+  carrier_margin?: Array<{
+    mc_number: string
+    carrier_name: string | null
+    bookings: number
+    avg_premium_pct: number
+    total_premium_paid: number
   }>
 }
 
