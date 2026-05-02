@@ -1,24 +1,23 @@
 'use client'
 
+import Link from 'next/link'
 import useSWR from 'swr'
 import {
   Phone,
   CheckCircle2,
-  TrendingUp,
   DollarSign,
-  ListChecks,
-  Percent,
   Target,
   ShieldOff,
+  Repeat,
 } from 'lucide-react'
 import { swrFetcher } from '@/lib/api'
 import { PageHeader } from '@/core/layout/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/core/ui-extras/ErrorState'
 import { KpiCard } from './KpiCard'
-import { OutcomesPie } from './OutcomesPie'
+import { OutcomesBars } from './OutcomesBars'
 import { SentimentBars } from './SentimentBars'
-import { CallsByDayLine } from './CallsByDayLine'
+import { CallsByDayBar } from './CallsByDayBar'
 import { RepeatFunnel } from './overview/RepeatFunnel'
 import { TopCarriersCard } from './overview/TopCarriersCard'
 import { formatMoney, formatNumber, formatPercent } from '@/lib/format'
@@ -56,21 +55,16 @@ export function MetricsPage() {
             <TopCarriersCard data={data.top_carriers} />
           </div>
 
-          {/* Top-line KPIs — 6 cards: total / booked / booking rate / revenue / R1 close / FMCSA killed. */}
+          {/* 6 headline KPIs. Total/Booked combined into one card to free a slot. */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <KpiCard
               icon={Phone}
-              label="Total calls"
+              label="Calls"
               value={formatNumber(data.totals.total_calls)}
+              hint={`${formatNumber(data.totals.booked_calls)} booked`}
             />
             <KpiCard
               icon={CheckCircle2}
-              label="Booked"
-              value={formatNumber(data.totals.booked_calls)}
-              tone="positive"
-            />
-            <KpiCard
-              icon={Percent}
               label="Booking rate"
               value={formatPercent(data.totals.booking_rate)}
               tone="positive"
@@ -85,32 +79,25 @@ export function MetricsPage() {
               icon={Target}
               label="Round-1 close rate"
               value={formatPercent(data.round_one_close_rate ?? null)}
-              hint="Booked in opening offer"
+              hint="Closed without a counter-offer"
               tone="positive"
             />
             <KpiCard
               icon={ShieldOff}
               label="FMCSA killed"
               value={formatPercent(data.fmcsa_killed_rate ?? null)}
-              hint="Killed at verification"
+              hint={
+                <Link
+                  href="/metrics/carriers"
+                  className="text-foreground hover:underline underline-offset-4"
+                >
+                  View ineligible carriers →
+                </Link>
+              }
               tone="negative"
             />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <OutcomesPie
-              data={Object.entries(data.outcomes_distribution).map(([name, value]) => ({ name, value }))}
-            />
-            <SentimentBars
-              data={Object.entries(data.quality.sentiment_distribution).map(([name, value]) => ({ name, value }))}
-            />
-          </div>
-
-          <CallsByDayLine data={data.calls_by_day} />
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <KpiCard
-              icon={ListChecks}
+              icon={Repeat}
               label="Avg negotiation rounds"
               value={
                 data.negotiation.avg_rounds_to_close !== null
@@ -118,12 +105,20 @@ export function MetricsPage() {
                   : '—'
               }
             />
-            <KpiCard
-              icon={TrendingUp}
-              label="Avg margin vs loadboard"
-              value={formatPercent(data.negotiation.avg_margin_vs_loadboard)}
-            />
           </div>
+
+          {/* Outcomes (sorted bars) + 7-day calls chart. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <OutcomesBars
+              data={Object.entries(data.outcomes_distribution).map(([name, value]) => ({ name, value }))}
+            />
+            <CallsByDayBar data={data.calls_by_day} />
+          </div>
+
+          {/* Sentiment as a compact bottom strip — bot-inferred, low protagonism. */}
+          <SentimentBars
+            data={Object.entries(data.quality.sentiment_distribution).map(([name, value]) => ({ name, value }))}
+          />
         </div>
       )}
     </>
