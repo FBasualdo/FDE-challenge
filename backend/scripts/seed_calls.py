@@ -84,12 +84,12 @@ user: Alright, fourteen fifty-two works.
 A: Confirmed at fourteen fifty-two. One-four-five-two. Transferring now.
 """
 
-T_BOOKED_SUNSET = """\
+T_BOOKED_ORION = """\
 A: Acme Logistics, how can I help?
 user: Calling on Atlanta to Miami, reefer.
 A: What's your MC number?
-user: Two zero zero zero, one four seven.
-A: 2000147 — Sunset Carriers, that right?
+user: One eight zero zero, zero zero one.
+A: 1800001 — Orion Moving Systems, that right?
 user: Yeah.
 A: I have an Atlanta to Miami reefer, pharmaceuticals, 660 miles. Eighteen-fifty. One-eight-five-zero.
 user: I'd want twenty-one hundred for that.
@@ -98,24 +98,12 @@ user: That works.
 A: Confirmed at nineteen forty-three. One-nine-four-three. Transferring you now.
 """
 
-T_BOOKED_APEX = """\
-A: Acme Logistics, how can I help?
-user: Denver to Kansas City, dry van.
-A: MC number?
-user: Three one eight, four seven two zero.
-A: Apex Freight, right?
-user: Yes.
-A: Dry Van, Denver to Kansas City, 600 miles, pickup Wednesday. Thirteen-eighty. One-three-eight-zero.
-user: That's fine, I'll take it.
-A: Confirmed at thirteen-eighty. One-three-eight-zero. Transferring now.
-"""
-
-T_NEG_FAILED_LIBERTY = """\
+T_NEG_FAILED_GREGORY = """\
 A: Acme Logistics, how can I help?
 user: Pittsburgh to New York, dry van.
 A: MC?
-user: Four one two zero zero nine three.
-A: Liberty Hauling, that right?
+user: One six five zero, zero zero zero.
+A: Gregory Boy Trucking, that right?
 user: Yes.
 A: Dry Van, Pittsburgh to New York, 380 miles. Twelve-fifty. One-two-five-zero.
 user: I need sixteen hundred.
@@ -128,12 +116,12 @@ user: I'll have to pass. Thanks.
 A: Understood. If anything changes someone will reach out. Thanks for calling Acme Logistics.
 """
 
-T_NEG_FAILED_ROADRUNNER = """\
+T_NEG_FAILED_AJB = """\
 A: Acme Logistics, how can I help?
 user: Minneapolis to Chicago, reefer.
 A: MC number?
-user: Seven seven eight eight, three two one.
-A: Roadrunner Logistics, right?
+user: Seven seven eight, eight three two.
+A: AJB Transports, right?
 user: Yeah.
 A: Reefer, Minneapolis to Chicago, 410 miles. Eleven-eighty. One-one-eight-zero.
 user: I need fourteen-fifty.
@@ -146,12 +134,12 @@ user: I'll pass, thanks.
 A: Understood. If anything changes someone will reach out.
 """
 
-T_DECLINED = """\
+T_DECLINED_AJB = """\
 A: Acme Logistics, how can I help?
 user: Seattle to Portland, dry van.
 A: MC number?
-user: Seven seven eight eight, three two one.
-A: Roadrunner Logistics, right?
+user: Seven seven eight, eight three two.
+A: AJB Transports, right?
 user: Yes.
 A: Dry Van, Seattle to Portland, 175 miles, pickup Thursday morning. Six-twenty. Six-two-zero.
 user: That lane is too short for me, not interested at that rate.
@@ -162,20 +150,32 @@ T_NOT_ELIGIBLE = """\
 A: Acme Logistics, how can I help?
 user: Hi, looking at any flatbed runs out of Houston.
 A: Sure, what's your MC number?
-user: Nine nine nine nine, eight zero one.
+user: One five zero zero, zero zero zero.
 A: Let me check that. One moment.
-A: I'm sorry, your operating authority shows as not active per FMCSA records. I can't book you on a load until that's resolved. Please call us back once your status is active. Thanks for calling Acme Logistics.
+A: I'm sorry, your operating authority shows as inactive per FMCSA records. I can't book you on a load until that's resolved. Please call us back once your status is active. Thanks for calling Acme Logistics.
 """
 
 T_NO_MATCH = """\
 A: Acme Logistics, how can I help?
 user: Calling on Romeo Echo Foxtrot nine nine nine nine.
 A: REF-9999 — got it. MC number?
-user: Two zero zero zero, one four seven.
-A: Sunset Carriers, right?
+user: Seven five zero, zero zero one.
+A: Lapwin Inc, right?
 user: Yes.
 A: Let me check that reference. One moment.
 A: I'm not seeing anything matching REF-9999 on our boards right now. We have new postings coming up — visit AcmeLoads.com for the latest. Thanks for calling Acme Logistics.
+"""
+
+T_BOOKED_LAPWIN = """\
+A: Acme Logistics, how can I help?
+user: Looking at the Phoenix to LA backhaul.
+A: Sure, can I get your MC number?
+user: Seven five zero, zero zero one.
+A: 750001 — Lapwin Inc, right?
+user: Yes.
+A: Dry Van Phoenix to Los Angeles, 372 miles, pickup Monday afternoon. Nine-fifty. Nine-five-zero.
+user: Yeah, that works.
+A: Confirmed at nine-fifty. Nine-five-zero. Transferring now.
 """
 
 
@@ -231,13 +231,25 @@ def build(
     }
 
 
+# All MC numbers below were verified through FMCSA via /carriers/verify;
+# names match the live QCMobile records as of seeding.
+UNIQUE_MCS_TO_VERIFY: list[str] = [
+    "1521248",  # BEST YET EXPRESS INC          (eligible)
+    "750001",  # LAPWIN INC                    (eligible)
+    "778832",  # AJB TRANSPORTS CORP           (eligible)
+    "1800001",  # ORION MOVING SYSTEMS INC      (eligible)
+    "1650000",  # GREGORY BOY TRUCKING LLC      (eligible)
+    "1500000",  # L BURK TRANSPORT LLC          (inactive — used for Not Eligible)
+]
+
+
 CALLS: list[dict[str, Any]] = [
     build(
         "seed-call-001",
         at(6, 9, 14),
         242,
         carrier_mc="1521248",
-        carrier_name="Best Yet Express",
+        carrier_name="BEST YET EXPRESS INC",
         eligible=True,
         load={"load_id": "LD-1001", "loadboard_rate": 2400.0},
         rounds=0,
@@ -252,7 +264,7 @@ CALLS: list[dict[str, Any]] = [
         at(4, 11, 32),
         318,
         carrier_mc="1521248",
-        carrier_name="Best Yet Express",
+        carrier_name="BEST YET EXPRESS INC",
         eligible=True,
         load={"load_id": "LD-1006", "loadboard_rate": 1620.0},
         rounds=1,
@@ -267,7 +279,7 @@ CALLS: list[dict[str, Any]] = [
         at(1, 14, 5),
         405,
         carrier_mc="1521248",
-        carrier_name="Best Yet Express",
+        carrier_name="BEST YET EXPRESS INC",
         eligible=True,
         load={"load_id": "LD-1014", "loadboard_rate": 1320.0},
         rounds=2,
@@ -281,45 +293,45 @@ CALLS: list[dict[str, Any]] = [
         "seed-call-004",
         at(5, 10, 47),
         298,
-        carrier_mc="2000147",
-        carrier_name="Sunset Carriers",
+        carrier_mc="1800001",
+        carrier_name="ORION MOVING SYSTEMS INC",
         eligible=True,
         load={"load_id": "LD-1005", "loadboard_rate": 1850.0},
         rounds=1,
         final_rate=1943.0,
         outcome="Booked",
         sentiment="Positive",
-        transcript=T_BOOKED_SUNSET,
+        transcript=T_BOOKED_ORION,
         analysis_extra={"carrier_quoted_rate": 2100.0},
     ),
     build(
         "seed-call-005",
         at(3, 15, 22),
         201,
-        carrier_mc="3184720",
-        carrier_name="Apex Freight",
+        carrier_mc="750001",
+        carrier_name="LAPWIN INC",
         eligible=True,
-        load={"load_id": "LD-1011", "loadboard_rate": 1380.0},
+        load={"load_id": "LD-1004", "loadboard_rate": 950.0},
         rounds=0,
-        final_rate=1380.0,
+        final_rate=950.0,
         outcome="Booked",
         sentiment="Positive",
-        transcript=T_BOOKED_APEX,
-        analysis_extra={"carrier_quoted_rate": 1380.0},
+        transcript=T_BOOKED_LAPWIN,
+        analysis_extra={"carrier_quoted_rate": 950.0},
     ),
     build(
         "seed-call-006",
         at(4, 16, 8),
         377,
-        carrier_mc="4120093",
-        carrier_name="Liberty Hauling",
+        carrier_mc="1650000",
+        carrier_name="GREGORY BOY TRUCKING LLC",
         eligible=True,
         load={"load_id": "LD-1018", "loadboard_rate": 1250.0},
         rounds=3,
         final_rate=None,
         outcome="Negotiation Failed",
         sentiment="Negative",
-        transcript=T_NEG_FAILED_LIBERTY,
+        transcript=T_NEG_FAILED_GREGORY,
         analysis_extra={
             "carrier_quoted_rate": 1600.0,
             "decline_reason": "rate too low; carrier wanted 1500 floor",
@@ -329,15 +341,15 @@ CALLS: list[dict[str, Any]] = [
         "seed-call-007",
         at(2, 9, 51),
         342,
-        carrier_mc="7788321",
-        carrier_name="Roadrunner Logistics",
+        carrier_mc="778832",
+        carrier_name="AJB TRANSPORTS CORP",
         eligible=True,
         load={"load_id": "LD-1023", "loadboard_rate": 1180.0},
         rounds=3,
         final_rate=None,
         outcome="Negotiation Failed",
         sentiment="Neutral",
-        transcript=T_NEG_FAILED_ROADRUNNER,
+        transcript=T_NEG_FAILED_AJB,
         analysis_extra={
             "carrier_quoted_rate": 1450.0,
             "decline_reason": "rate gap too wide; carrier insisted on 1400",
@@ -347,23 +359,23 @@ CALLS: list[dict[str, Any]] = [
         "seed-call-008",
         at(2, 13, 16),
         134,
-        carrier_mc="7788321",
-        carrier_name="Roadrunner Logistics",
+        carrier_mc="778832",
+        carrier_name="AJB TRANSPORTS CORP",
         eligible=True,
         load={"load_id": "LD-1009", "loadboard_rate": 620.0},
         rounds=0,
         final_rate=None,
         outcome="Carrier Declined",
         sentiment="Neutral",
-        transcript=T_DECLINED,
+        transcript=T_DECLINED_AJB,
         analysis_extra={"decline_reason": "lane too short / rate not worth deadhead"},
     ),
     build(
         "seed-call-009",
         at(1, 11, 4),
         88,
-        carrier_mc="9999801",
-        carrier_name="Ghost Carriers Inc",
+        carrier_mc="1500000",
+        carrier_name="L BURK TRANSPORT LLC",
         eligible=False,
         load=None,
         rounds=0,
@@ -371,14 +383,14 @@ CALLS: list[dict[str, Any]] = [
         outcome="Not Eligible",
         sentiment="Neutral",
         transcript=T_NOT_ELIGIBLE,
-        analysis_extra={"decline_reason": "FMCSA: not active"},
+        analysis_extra={"decline_reason": "FMCSA: operating authority inactive"},
     ),
     build(
         "seed-call-010",
         at(0, 8, 41),
         119,
-        carrier_mc="2000147",
-        carrier_name="Sunset Carriers",
+        carrier_mc="750001",
+        carrier_name="LAPWIN INC",
         eligible=True,
         load=None,
         rounds=0,
@@ -393,24 +405,41 @@ CALLS: list[dict[str, Any]] = [
 
 def main() -> None:
     headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
-    posted = 0
-    skipped = 0
-    failed = 0
-    with httpx.Client(timeout=15.0) as cli:
+    with httpx.Client(timeout=20.0) as cli:
+        # Verify each MC against FMCSA first. Each call lands a row in the
+        # `verifications` table, so the Compliance tab in the dashboard
+        # mirrors the carriers we're about to seed calls for.
+        print("Verifying carriers via FMCSA:")
+        for mc in UNIQUE_MCS_TO_VERIFY:
+            r = cli.get(f"{BASE_URL}/carriers/verify", params={"mc_number": mc}, headers=headers)
+            if r.status_code != 200:
+                print(f"  ✗ MC {mc}: {r.status_code} {r.text[:160]}")
+                continue
+            b = r.json()
+            print(
+                f"  ✓ MC {mc}: eligible={b.get('eligible')} | "
+                f"status={b.get('status') or '-'} | {b.get('carrier_name') or '-'}"
+            )
+
+        print("\nUpserting calls:")
+        posted = 0
+        updated = 0
+        failed = 0
         for c in CALLS:
             r = cli.post(f"{BASE_URL}/calls", headers=headers, json=c)
             if r.status_code == 200:
                 body = r.json()
-                state = "created" if body.get("created") else "updated"
-                print(f"  ✓ {c['call_id']} ({c['outcome']}) -> {state}")
                 if body.get("created"):
                     posted += 1
+                    state = "created"
                 else:
-                    skipped += 1
+                    updated += 1
+                    state = "updated"
+                print(f"  ✓ {c['call_id']} ({c['outcome']}) -> {state}")
             else:
                 failed += 1
                 print(f"  ✗ {c['call_id']} -> {r.status_code} {r.text[:200]}")
-    print(f"\nDone. created={posted} already_present={skipped} failed={failed}")
+        print(f"\nDone. created={posted} updated={updated} failed={failed}")
 
 
 if __name__ == "__main__":
