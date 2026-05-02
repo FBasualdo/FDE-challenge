@@ -336,6 +336,25 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
         request.negotiation.model_dump() if request.negotiation else None
     )
 
+    # Defensive lint: a carrier flagged ineligible by FMCSA cannot be legally
+    # booked. If the bot's Classify reports Booked anyway (transcript-driven
+    # mistake when the bot fails to enforce the eligibility branch), force
+    # the outcome to Not Eligible to keep the audit trail consistent. The
+    # broker's compliance team is the source of truth, not the LLM tag.
+    final_outcome = request.outcome
+    if (
+        carrier_payload
+        and carrier_payload.get("eligible") is False
+        and request.outcome == CallOutcome.BOOKED
+    ):
+        logger.warning(
+            "ingest_call call=%s carrier_ineligible_but_booked → coercing outcome "
+            "Booked → Not Eligible (mc=%s)",
+            request.call_id,
+            carrier_payload.get("mc_number"),
+        )
+        final_outcome = CallOutcome.NOT_ELIGIBLE
+
     values = {
         "call_id": request.call_id,
         "started_at": request.started_at,
@@ -345,7 +364,7 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
         "load": load_payload,
         "negotiation": negotiation_payload,
         "analysis": request.analysis,
-        "outcome": request.outcome.value,
+        "outcome": final_outcome.value,
         "sentiment": request.sentiment.value,
         "transcript": request.transcript,
         "recording_url": request.recording_url,
@@ -365,7 +384,7 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
     logger.info(
         "ingest_call call=%s outcome=%s sentiment=%s created=%s",
         request.call_id,
-        request.outcome.value,
+        final_outcome.value,
         request.sentiment.value,
         created,
     )
