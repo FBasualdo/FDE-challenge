@@ -122,6 +122,10 @@ async def _live_verify(mc_number: str) -> dict[str, Any]:
         }
 
     if response.status_code >= 500:
+        logger.warning(
+            "FMCSA upstream %d for mc=%s body[:200]=%r",
+            response.status_code, mc_number, response.text[:200],
+        )
         return {
             "eligible": False,
             "mc_number": mc_number,
@@ -130,6 +134,24 @@ async def _live_verify(mc_number: str) -> dict[str, Any]:
             "status": None,
             "allowed_to_operate": None,
             "reason": "FMCSA temporarily unavailable",
+            "raw": None,
+        }
+
+    if response.status_code >= 400:
+        # 401 (bad webkey) / 403 (WAF) / 429 (rate limit). Don't pretend the
+        # carrier is invalid — surface the upstream issue and treat as unavailable.
+        logger.error(
+            "FMCSA client error %d for mc=%s body[:200]=%r",
+            response.status_code, mc_number, response.text[:200],
+        )
+        return {
+            "eligible": False,
+            "mc_number": mc_number,
+            "carrier_name": None,
+            "dot_number": None,
+            "status": None,
+            "allowed_to_operate": None,
+            "reason": f"FMCSA verification failed (upstream {response.status_code})",
             "raw": None,
         }
 
@@ -174,11 +196,14 @@ def _normalize_fmcsa_payload(mc_number: str, payload: dict[str, Any]) -> dict[st
         }
 
     allowed_raw = carrier.get("allowedToOperate") or carrier.get("allowed_to_operate")
-    allowed_to_operate = (
-        True if str(allowed_raw).upper() in ("Y", "YES", "TRUE") else
-        False if str(allowed_raw).upper() in ("N", "NO", "FALSE") else
-        None
-    )
+    if allowed_raw is None:
+        allowed_to_operate: bool | None = None
+    elif str(allowed_raw).upper() in ("Y", "YES", "TRUE"):
+        allowed_to_operate = True
+    elif str(allowed_raw).upper() in ("N", "NO", "FALSE"):
+        allowed_to_operate = False
+    else:
+        allowed_to_operate = None
     status = carrier.get("statusCode") or carrier.get("status")
     eligible = bool(allowed_to_operate) and (status is None or str(status).upper() in ("A", "ACTIVE"))
 

@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,7 +82,12 @@ async def verify_carrier(
 
 
 def _format_dt(dt: datetime) -> str:
-    return dt.strftime("%a %b %-d at %-I:%M %p")
+    # Avoid GNU/BSD-only %-d / %-I tokens (they crash on Windows / musl).
+    weekday = dt.strftime("%a")
+    month = dt.strftime("%b")
+    hour12 = dt.hour % 12 or 12
+    am_pm = "AM" if dt.hour < 12 else "PM"
+    return f"{weekday} {month} {dt.day} at {hour12}:{dt.minute:02d} {am_pm}"
 
 
 def _build_pitch_summary(row: LoadORM) -> str:
@@ -135,18 +141,21 @@ async def search_loads(
     if pickup_date_from:
         cutoff = datetime.combine(pickup_date_from, datetime.min.time(), tzinfo=timezone.utc)
         stmt = stmt.where(LoadORM.pickup_datetime >= cutoff)
-    stmt = stmt.order_by(LoadORM.pickup_datetime.asc())
+    stmt = (
+        stmt.order_by(LoadORM.pickup_datetime.asc())
+        .limit(MAX_LOADS_RETURNED + 1)
+    )
 
     rows = list((await session.execute(stmt)).scalars().all())
-    total = len(rows)
+    more = len(rows) > MAX_LOADS_RETURNED
     capped = rows[:MAX_LOADS_RETURNED]
     logger.info(
-        "search_loads ref=%s origin=%r dest=%r equip=%r from=%s -> matches=%d returned=%d",
-        reference_number, origin, destination, equipment_type, pickup_date_from, total, len(capped),
+        "search_loads ref=%s origin=%r dest=%r equip=%r from=%s -> returned=%d more=%s",
+        reference_number, origin, destination, equipment_type, pickup_date_from, len(capped), more,
     )
     return SearchLoadsResponse(
-        matches_found=total,
-        more_available=total > MAX_LOADS_RETURNED,
+        matches_found=len(capped),
+        more_available=more,
         loads=[_row_to_load(r) for r in capped],
     )
 
@@ -179,10 +188,8 @@ async def evaluate_negotiation(
         await session.execute(select(LoadORM).where(LoadORM.load_id == request.load_id))
     ).scalar_one_or_none()
     if load is None:
-        from fastapi import HTTPException, status
-
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Load not found: {request.load_id}",
         )
 
@@ -395,8 +402,13 @@ async def metrics_summary(session: AsyncSession) -> MetricsSummaryResponse:
     eligibility_true = 0
 
     for c in calls:
-        outcomes[c.outcome] = outcomes.get(c.outcome, 0) + 1
-        sentiments[c.sentiment] = sentiments.get(c.sentiment, 0) + 1
+        # Defensive: skip rows with values outside the current enum (e.g. left
+        # over from a renamed tag). Otherwise the response shape grows keys
+        # the dashboard doesn't know about.
+        if c.outcome in outcomes:
+            outcomes[c.outcome] += 1
+        if c.sentiment in sentiments:
+            sentiments[c.sentiment] += 1
         durations.append(c.duration_seconds)
         eligible = _call_eligible(c)
         if eligible is not None:

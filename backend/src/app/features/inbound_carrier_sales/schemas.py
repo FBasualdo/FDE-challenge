@@ -106,35 +106,36 @@ class CallSentiment(StrEnum):
 
 
 class CallCarrier(BaseModel):
+    model_config = ConfigDict(extra="allow")
     mc_number: str | None = None
     carrier_name: str | None = None
     eligible: bool | None = None
 
 
 class CallLoad(BaseModel):
+    model_config = ConfigDict(extra="allow")
     load_id: str | None = None
     loadboard_rate: float | None = None
 
 
 class CallNegotiation(BaseModel):
-    rounds: int
+    model_config = ConfigDict(extra="allow")
+    rounds: int = 0
     final_agreed_rate: float | None = None
 
 
 class IngestCallRequest(BaseModel):
-    call_id: str
-    # AwareDatetime rejects naive datetimes at the validation boundary so we
-    # never persist a tz-naive value into a TIMESTAMP WITH TIME ZONE column.
+    call_id: str = Field(min_length=1, max_length=128)
     started_at: AwareDatetime
     ended_at: AwareDatetime
-    duration_seconds: int = Field(ge=0)
+    duration_seconds: int = Field(ge=0, le=24 * 3600)
     carrier: CallCarrier | None = None
     load: CallLoad | None = None
     negotiation: CallNegotiation | None = None
     outcome: CallOutcome
     sentiment: CallSentiment
-    transcript: str | None = None
-    recording_url: str | None = None
+    transcript: str | None = Field(default=None, max_length=200_000)
+    recording_url: str | None = Field(default=None, max_length=2_048)
 
 
 class IngestCallResponse(BaseModel):

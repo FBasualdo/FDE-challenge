@@ -1,11 +1,14 @@
 """Application settings."""
 
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger("carrier_sales.settings")
 
 # backend/src/settings.py → backend/src → backend → repo root
 _REPO_ROOT = Path(__file__).parents[2]
@@ -47,16 +50,28 @@ class _Settings(BaseSettings):
     @field_validator("database_url", mode="before")
     @classmethod
     def _normalize_database_url(cls, v: str) -> str:
-        # Railway (and Heroku-style providers) inject DATABASE_URL with the
-        # `postgres://` or `postgresql://` prefix. SQLAlchemy + asyncpg needs
-        # the driver in the scheme, so coerce to `postgresql+asyncpg://`
-        # unless the user explicitly picked another driver.
         if not isinstance(v, str) or "://" not in v:
             return v
         scheme, rest = v.split("://", 1)
         if scheme in ("postgres", "postgresql"):
-            return f"postgresql+asyncpg://{rest}"
+            normalized = f"postgresql+asyncpg://{rest}"
+            logger.warning(
+                "DATABASE_URL scheme rewritten %r → 'postgresql+asyncpg' for asyncpg compatibility",
+                scheme,
+            )
+            return normalized
         return v
+
+    @model_validator(mode="after")
+    def _enforce_api_key_outside_local(self) -> "_Settings":
+        # Boot-time guard: refuse to start in any non-LOCAL stage without an
+        # API_KEY. Without this, a misconfigured deployment runs wide-open.
+        if self.env_stage_name != "LOCAL" and not self.api_key:
+            raise ValueError(
+                f"API_KEY must be set when ENV_STAGE_NAME={self.env_stage_name}. "
+                "Refusing to boot in an authenticated environment without auth configured."
+            )
+        return self
 
 
 @lru_cache()
