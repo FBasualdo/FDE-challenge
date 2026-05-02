@@ -28,12 +28,15 @@ from .schemas import (
     CallSentiment,
     EvaluateNegotiationRequest,
     EvaluateNegotiationResponse,
+    FirstTimeRepeatBucket,
+    FirstTimeVsRepeat,
     IngestCallRequest,
     Load,
     MetricsNegotiation,
     MetricsQuality,
     MetricsSummaryResponse,
     MetricsTotals,
+    RepeatFunnel,
     SearchLoadsResponse,
     VerifyCarrierRequest,
     VerifyCarrierResponse,
@@ -410,6 +413,87 @@ def _call_eligible(call: CallORM) -> bool | None:
     return None if raw is None else bool(raw)
 
 
+_SUMMARY_EXTENSIONS_SQL = """
+WITH mc_ranked AS (
+    -- Each conversational call's rank within its MC's history, oldest first.
+    -- Excludes Not Eligible per the metrics plan (those don't count toward
+    -- "relationship" because the bot never actually pitched them).
+    SELECT
+        carrier->>'mc_number' AS mc,
+        outcome,
+        ROW_NUMBER() OVER (
+            PARTITION BY carrier->>'mc_number'
+            ORDER BY started_at ASC
+        ) AS rn
+    FROM calls
+    WHERE outcome <> 'Not Eligible'
+      AND carrier->>'mc_number' IS NOT NULL
+      AND carrier->>'mc_number' <> ''
+),
+mc_conv_counts AS (
+    SELECT mc, COUNT(*) AS n
+    FROM mc_ranked
+    GROUP BY mc
+),
+funnel AS (
+    SELECT
+        COUNT(*) FILTER (WHERE n = 1) AS once,
+        COUNT(*) FILTER (WHERE n BETWEEN 2 AND 3) AS two_to_three,
+        COUNT(*) FILTER (WHERE n >= 4) AS four_plus
+    FROM mc_conv_counts
+),
+ftvr AS (
+    SELECT
+        COUNT(*) FILTER (WHERE rn = 1) AS first_time_calls,
+        COUNT(*) FILTER (WHERE rn = 1 AND outcome = 'Booked')
+            AS first_time_booked,
+        COUNT(*) FILTER (WHERE rn >= 2) AS repeat_calls,
+        COUNT(*) FILTER (WHERE rn >= 2 AND outcome = 'Booked')
+            AS repeat_booked
+    FROM mc_ranked
+),
+overall AS (
+    SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE outcome = 'Booked') AS booked,
+        COUNT(*) FILTER (
+            WHERE outcome = 'Booked'
+              AND (negotiation->>'rounds')::int = 1
+        ) AS round_one_booked,
+        COUNT(*) FILTER (WHERE outcome = 'Not Eligible') AS not_eligible
+    FROM calls
+)
+SELECT
+    overall.total,
+    overall.booked,
+    overall.round_one_booked,
+    overall.not_eligible,
+    funnel.once,
+    funnel.two_to_three,
+    funnel.four_plus,
+    ftvr.first_time_calls,
+    ftvr.first_time_booked,
+    ftvr.repeat_calls,
+    ftvr.repeat_booked
+FROM overall, funnel, ftvr
+"""
+
+
+async def _fetch_summary_extensions(
+    session: AsyncSession,
+) -> dict[str, Any]:
+    """One-shot SQL for the four new /metrics/summary fields.
+
+    Returned shape (raw):
+      total, booked, round_one_booked, not_eligible,
+      once, two_to_three, four_plus,
+      first_time_calls, first_time_booked,
+      repeat_calls, repeat_booked
+    """
+    row = (await session.execute(text(_SUMMARY_EXTENSIONS_SQL))).mappings().first()
+    return dict(row) if row else {}
+
+
 async def metrics_summary(session: AsyncSession) -> MetricsSummaryResponse:
     calls = list((await session.execute(select(CallORM))).scalars().all())
 
@@ -479,6 +563,40 @@ async def metrics_summary(session: AsyncSession) -> MetricsSummaryResponse:
         for d in span
     ]
 
+    # Analytics layer v2 extensions: round_one_close_rate, fmcsa_killed_rate,
+    # first_time_vs_repeat, repeat_funnel. All four come from one SQL pass
+    # that reuses the row scan above without loading per-row data again.
+    ext = await _fetch_summary_extensions(session)
+    ext_total = int(ext.get("total") or 0)
+    ext_booked = int(ext.get("booked") or 0)
+    ext_round_one_booked = int(ext.get("round_one_booked") or 0)
+    ext_not_eligible = int(ext.get("not_eligible") or 0)
+
+    round_one_close_rate = round(ext_round_one_booked / ext_booked, 4) if ext_booked else None
+    fmcsa_killed_rate = round(ext_not_eligible / ext_total, 4) if ext_total else None
+
+    first_time_calls = int(ext.get("first_time_calls") or 0)
+    first_time_booked = int(ext.get("first_time_booked") or 0)
+    repeat_calls = int(ext.get("repeat_calls") or 0)
+    repeat_booked = int(ext.get("repeat_booked") or 0)
+    first_time_vs_repeat = FirstTimeVsRepeat(
+        first_time=FirstTimeRepeatBucket(
+            calls=first_time_calls,
+            booking_rate=(
+                round(first_time_booked / first_time_calls, 4) if first_time_calls else None
+            ),
+        ),
+        repeat=FirstTimeRepeatBucket(
+            calls=repeat_calls,
+            booking_rate=(round(repeat_booked / repeat_calls, 4) if repeat_calls else None),
+        ),
+    )
+    repeat_funnel = RepeatFunnel(
+        once=int(ext.get("once") or 0),
+        two_to_three=int(ext.get("two_to_three") or 0),
+        four_plus=int(ext.get("four_plus") or 0),
+    )
+
     return MetricsSummaryResponse(
         totals=MetricsTotals(
             total_calls=total,
@@ -501,4 +619,8 @@ async def metrics_summary(session: AsyncSession) -> MetricsSummaryResponse:
         ),
         outcomes_distribution=outcomes,
         calls_by_day=calls_by_day,
+        round_one_close_rate=round_one_close_rate,
+        fmcsa_killed_rate=fmcsa_killed_rate,
+        first_time_vs_repeat=first_time_vs_repeat,
+        repeat_funnel=repeat_funnel,
     )

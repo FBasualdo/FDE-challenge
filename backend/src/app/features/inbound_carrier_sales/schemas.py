@@ -251,9 +251,33 @@ class CallsByDayEntry(BaseModel):
     booked: int
 
 
+class FirstTimeRepeatBucket(BaseModel):
+    calls: int
+    booking_rate: float | None = None
+
+
+class FirstTimeVsRepeat(BaseModel):
+    first_time: FirstTimeRepeatBucket
+    repeat: FirstTimeRepeatBucket
+
+
+class RepeatFunnel(BaseModel):
+    once: int
+    two_to_three: int
+    four_plus: int
+
+
 class MetricsSummaryResponse(BaseModel):
     totals: MetricsTotals
     negotiation: MetricsNegotiation
     quality: MetricsQuality
     outcomes_distribution: dict[str, int]
     calls_by_day: list[CallsByDayEntry]
+    # New fields (analytics layer v2). All four are derived from the same
+    # base table (`calls`); the dashboard's overview tab reads them so it
+    # doesn't have to fan out to /metrics/carriers + /metrics/negotiation
+    # for headline KPIs.
+    round_one_close_rate: float | None = None
+    fmcsa_killed_rate: float | None = None
+    first_time_vs_repeat: FirstTimeVsRepeat | None = None
+    repeat_funnel: RepeatFunnel | None = None
