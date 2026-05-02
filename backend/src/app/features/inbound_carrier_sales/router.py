@@ -10,7 +10,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.built_in.auth import RequireApiKey
+from src.app.built_in.auth import RequireApiKey, RequireUser
 
 from . import service
 from .db import get_session
@@ -148,6 +148,8 @@ async def preview_call_payload(
 @router.get("/metrics/summary", response_model=MetricsSummaryResponse)
 async def metrics_summary(
     session: SessionDep,
-    _: None = RequireApiKey,
+    _user: RequireUser,
 ) -> MetricsSummaryResponse:
+    # Dashboard-only read endpoint: gate with the user JWT, not the
+    # service API key. The voice agent never queries aggregated metrics.
     return await service.metrics_summary(session)
