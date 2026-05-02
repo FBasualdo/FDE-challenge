@@ -81,10 +81,12 @@ async def list_carriers(
             sort_value = last.calls
         elif sort == "booking_rate":
             sort_value = last.booking_rate
-        elif sort == "avg_quote_premium":
+        elif sort == "avg_quote_premium_pct":
             sort_value = last.avg_quote_premium_pct
         elif sort == "drop_rate":
             sort_value = last.drop_rate
+        elif sort == "last_called_at":
+            sort_value = last.last_called_at
         else:
             sort_value = last.calls
         next_cursor = encode_cursor(sort_value, last.mc_number)

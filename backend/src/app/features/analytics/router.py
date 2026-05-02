@@ -34,7 +34,14 @@ async def list_carriers(
     session: SessionDep,
     _user: RequireUser,
     sort: Annotated[
-        Literal["calls", "booking_rate", "avg_quote_premium", "drop_rate"], Query()
+        Literal[
+            "calls",
+            "booking_rate",
+            "avg_quote_premium_pct",
+            "drop_rate",
+            "last_called_at",
+        ],
+        Query(),
     ] = "calls",
     min_calls: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,

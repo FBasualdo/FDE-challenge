@@ -20,8 +20,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 _SORT_CLAUSES: dict[str, str] = {
     "calls": "calls DESC, mc_number ASC",
     "booking_rate": "booking_rate DESC, mc_number ASC",
-    "avg_quote_premium": "avg_quote_premium_pct DESC NULLS LAST, mc_number ASC",
+    "avg_quote_premium_pct": "avg_quote_premium_pct DESC NULLS LAST, mc_number ASC",
     "drop_rate": "drop_rate DESC, mc_number ASC",
+    "last_called_at": "last_called_at DESC NULLS LAST, mc_number ASC",
 }
 
 
@@ -262,12 +263,16 @@ async def fetch_carriers(
         col_map = {
             "calls": "a.calls",
             "booking_rate": "a.booking_rate",
-            "avg_quote_premium": "a.avg_quote_premium_pct",
+            "avg_quote_premium_pct": "a.avg_quote_premium_pct",
             "drop_rate": "a.drop_rate",
+            "last_called_at": "a.last_called_at",
         }
         col = col_map.get(sort, "a.calls")
         if sort == "calls":
             params["cursor_val"] = int(sort_value)
+        elif sort == "last_called_at":
+            # Carry the ISO string straight through; Postgres casts it.
+            params["cursor_val"] = sort_value
         else:
             params["cursor_val"] = float(sort_value) if sort_value is not None else None
         where += (
