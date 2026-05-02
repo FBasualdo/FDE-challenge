@@ -21,13 +21,13 @@ function resolveTheme(mode: ThemeMode): 'light' | 'dark' {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>('system')
+  const [theme, setThemeState] = useState<ThemeMode>('light')
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark')
 
   // Read from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null
-    const initial: ThemeMode = stored ?? 'system'
+    const initial: ThemeMode = stored ?? 'light'
     setThemeState(initial)
     setResolvedTheme(resolveTheme(initial))
   }, [])
