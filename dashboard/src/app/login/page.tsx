@@ -14,7 +14,7 @@ import type { LoginResponse } from '@/lib/types'
 function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get('next') || '/agents'
+  const next = params.get('next') || '/metrics'
 
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -29,7 +29,7 @@ function LoginForm() {
         method: 'POST',
         json: { password },
       })
-      router.replace(next.startsWith('/') ? next : '/agents')
+      router.replace(next.startsWith('/') ? next : '/metrics')
       router.refresh()
     } catch (err) {
       const message =

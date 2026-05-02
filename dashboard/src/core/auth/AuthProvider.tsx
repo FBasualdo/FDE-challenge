@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (error instanceof ApiError && error.status === 401) ||
       (data && !data.authenticated)
     if (unauthenticated) {
-      const next = pathname && pathname !== '/login' ? pathname : '/agents'
+      const next = pathname && pathname !== '/login' ? pathname : '/metrics'
       router.replace(`/login?next=${encodeURIComponent(next)}`)
     }
   }, [data, error, isLoading, pathname, router])
