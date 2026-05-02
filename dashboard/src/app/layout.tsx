@@ -15,8 +15,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Carrier Sales Dashboard',
+  title: 'HappyRobot — Carrier Sales',
   description: 'Inbound carrier sales metrics dashboard.',
+  icons: {
+    icon: '/happyrobot.png',
+    shortcut: '/happyrobot.png',
+    apple: '/happyrobot.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

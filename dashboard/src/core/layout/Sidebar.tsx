@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -126,9 +127,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Brand */}
       <div className={cn('flex h-14 items-center border-b border-border px-3', collapsed && 'justify-center px-0')}>
         <Link href="/agents" className="flex items-center gap-2 overflow-hidden">
-          <span className="relative flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold ring-1 ring-[var(--status-positive)]/40">
-            HR
-          </span>
+          <Image
+            src="/happyrobot.png"
+            alt="HappyRobot"
+            width={32}
+            height={32}
+            className="size-8 shrink-0 rounded-md ring-1 ring-[var(--status-positive)]/40"
+            priority
+          />
           {!collapsed && (
             <span className="truncate font-mono text-sm font-semibold tracking-tight text-foreground">
               HappyRobot

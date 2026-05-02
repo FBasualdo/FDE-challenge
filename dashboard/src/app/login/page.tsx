@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -49,9 +50,14 @@ function LoginForm() {
     <Card className="w-full max-w-sm" size="default">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold ring-1 ring-[var(--status-positive)]/40">
-            HR
-          </span>
+          <Image
+            src="/happyrobot.png"
+            alt="HappyRobot"
+            width={32}
+            height={32}
+            className="size-8 rounded-md ring-1 ring-[var(--status-positive)]/40"
+            priority
+          />
           <CardTitle>HappyRobot Dashboard</CardTitle>
         </div>
         <CardDescription>Enter the passcode to continue.</CardDescription>
