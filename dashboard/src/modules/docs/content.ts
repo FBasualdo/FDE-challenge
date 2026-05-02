@@ -12,6 +12,7 @@ HappyRobot FDE technical challenge.
 - **Dashboard** — *this site you're reading*
 - **API** — \`https://fde-challenge-production.up.railway.app\`
 - **Repo** — [github.com/FBasualdo/FDE-challenge](https://github.com/FBasualdo/FDE-challenge)
+- **HappyRobot workflow** — [platform.happyrobot.ai/.../wy8euap45gz6](https://platform.happyrobot.ai/fdefranciscobasualdo/workflows/wy8euap45gz6/editor/b1lqyd3z9up1)
 
 ---
 
