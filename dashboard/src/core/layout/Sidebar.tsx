@@ -18,6 +18,7 @@ import {
   Handshake,
   Package,
   ShieldCheck,
+  BookOpen,
 } from 'lucide-react'
 import { ThemeToggle } from '@/core/theme/ThemeToggle'
 import { useAuth } from '@/core/auth/useAuth'
@@ -261,6 +262,24 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           })}
         </ul>
       </nav>
+
+      {/* Secondary nav: docs sit below the main app nav, above the collapse/theme/user footer. */}
+      <div className={cn('border-t border-border p-2', collapsed && 'flex justify-center')}>
+        <Link
+          href="/docs"
+          className={cn(
+            'group flex items-center gap-2.5 rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-sm font-medium transition-colors',
+            pathname === '/docs' || pathname?.startsWith('/docs/')
+              ? 'border-l-[var(--status-positive)] bg-[var(--status-positive)]/10 text-foreground'
+              : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+            collapsed && 'justify-center px-0',
+          )}
+          title="Documentation"
+        >
+          <BookOpen className="size-4 shrink-0" aria-hidden />
+          {!collapsed && <span className="truncate">Docs</span>}
+        </Link>
+      </div>
 
       {/* Footer: collapse + theme + user */}
       <div className={cn('border-t border-border p-2 flex flex-col gap-1', collapsed && 'items-center')}>
