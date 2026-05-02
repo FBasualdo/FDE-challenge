@@ -20,7 +20,7 @@ import { OutcomesPie } from './OutcomesPie'
 import { SentimentBars } from './SentimentBars'
 import { CallsByDayLine } from './CallsByDayLine'
 import { RepeatFunnel } from './overview/RepeatFunnel'
-import { FirstTimeVsRepeatBars } from './overview/FirstTimeVsRepeatBars'
+import { TopCarriersCard } from './overview/TopCarriersCard'
 import { formatMoney, formatNumber, formatPercent } from '@/lib/format'
 import type { MetricsSummary } from '@/lib/types'
 
@@ -50,10 +50,10 @@ export function MetricsPage() {
 
       {!isLoading && !error && data && (
         <div className="flex flex-col gap-6">
-          {/* Repeat funnel + first-time vs repeat — top-of-page retention picture. */}
+          {/* Repeat funnel + top carriers — top-of-page relationship picture. */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <RepeatFunnel data={data.repeat_funnel} />
-            <FirstTimeVsRepeatBars data={data.first_time_vs_repeat} />
+            <TopCarriersCard data={data.top_carriers} />
           </div>
 
           {/* Top-line KPIs — 6 cards: total / booked / booking rate / revenue / R1 close / FMCSA killed. */}

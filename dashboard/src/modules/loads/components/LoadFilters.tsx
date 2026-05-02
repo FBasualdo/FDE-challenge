@@ -11,6 +11,7 @@ import {
   useLoadFilters,
   type EquipmentFilter,
   type LoadFilters as Filters,
+  type StatusFilter,
 } from '@/modules/loads/hooks/useLoadFilters'
 
 interface Props {
@@ -93,6 +94,25 @@ export function LoadFilters({ rightSlot }: Props) {
                 {opt}
               </option>
             ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="lf-status" className="text-xs text-muted-foreground">
+            Status
+          </Label>
+          <select
+            id="lf-status"
+            value={filters.status}
+            onChange={(e) => update({ status: e.target.value as StatusFilter })}
+            className={cn(
+              'h-9 w-36 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring',
+            )}
+          >
+            <option value="all">All statuses</option>
+            <option value="available">Available</option>
+            <option value="booked">Booked</option>
           </select>
         </div>
 

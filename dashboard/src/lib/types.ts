@@ -152,15 +152,19 @@ export interface MetricsSummary {
   // Analytics v2 extensions — see metrics plan §"Existing /metrics/summary extensions".
   round_one_close_rate?: number | null
   fmcsa_killed_rate?: number | null
-  first_time_vs_repeat?: {
-    first_time: { calls: number; booking_rate: number | null }
-    repeat: { calls: number; booking_rate: number | null }
-  }
   repeat_funnel?: {
     once: number
     two_to_three: number
     four_plus: number
   }
+  top_carriers?: Array<{
+    mc_number: string
+    carrier_name: string | null
+    calls: number
+    bookings: number
+    booking_rate: number | null
+    total_revenue: number
+  }>
 }
 
 // ---------------------------------------------------------------------------
@@ -256,6 +260,13 @@ export interface LoadCatalogItem {
   miles: number
   dimensions?: string | null
   pitch_summary: string
+  // Booking lifecycle (extended by backend; defensively optional so the UI
+  // builds even before the new fields ship).
+  is_booked?: boolean
+  booked_at?: string | null
+  booked_by_mc?: string | null
+  booked_by_call_id?: string | null
+  booked_agreed_rate?: number | null
 }
 
 export interface LoadsCatalogResponse {

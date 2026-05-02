@@ -20,7 +20,8 @@ import { MoneyCell } from '@/core/ui-extras/MoneyCell'
 import { EmptyState } from '@/core/ui-extras/EmptyState'
 import { ErrorState } from '@/core/ui-extras/ErrorState'
 import { Pagination } from '@/modules/transcripts/components/Pagination'
-import { formatDateTime, formatNumber } from '@/lib/format'
+import { formatDateTime, formatNumber, formatMoney } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { LoadCatalogItem, LoadsCatalogResponse } from '@/lib/types'
 import { useLoadFilters, loadFiltersToQuery } from '../hooks/useLoadFilters'
 import { LoadDetailDrawer } from './LoadDetailDrawer'
@@ -95,6 +96,7 @@ export function LoadsTable({ pageSize = 25, onItemsChange }: Props) {
             <TableHead>Load ID</TableHead>
             <TableHead>Lane</TableHead>
             <TableHead>Equipment</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Pickup</TableHead>
             <TableHead>Delivery</TableHead>
             <TableHead className="text-right">Loadboard</TableHead>
@@ -107,7 +109,7 @@ export function LoadsTable({ pageSize = 25, onItemsChange }: Props) {
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
               <TableRow key={`s-${i}`}>
-                {Array.from({ length: 9 }).map((__, j) => (
+                {Array.from({ length: 10 }).map((__, j) => (
                   <TableCell key={j}>
                     <Skeleton className="h-4 w-full" />
                   </TableCell>
@@ -116,11 +118,24 @@ export function LoadsTable({ pageSize = 25, onItemsChange }: Props) {
             ))}
 
           {!isLoading &&
-            items.map((load) => (
+            items.map((load) => {
+              const isBooked = load.is_booked ?? false
+              const bookedAt = load.booked_at ?? null
+              const bookedMc = load.booked_by_mc ?? null
+              const agreedRate = load.booked_agreed_rate ?? null
+              const tooltipParts = [
+                bookedMc ? `MC ${bookedMc}` : null,
+                bookedAt ? `on ${formatDateTime(bookedAt)}` : null,
+                agreedRate !== null ? `at ${formatMoney(agreedRate)}` : null,
+              ].filter(Boolean)
+              const tooltipText =
+                tooltipParts.length > 0 ? `Booked by ${tooltipParts.join(' ')}` : 'Booked'
+
+              return (
               <TableRow
                 key={load.load_id}
                 onClick={() => openLoad(load)}
-                className="cursor-pointer"
+                className={cn('cursor-pointer', isBooked && 'opacity-70')}
               >
                 <TableCell className="font-mono text-xs text-foreground">{load.load_id}</TableCell>
                 <TableCell>
@@ -128,6 +143,20 @@ export function LoadsTable({ pageSize = 25, onItemsChange }: Props) {
                 </TableCell>
                 <TableCell>
                   <Badge variant="muted">{load.equipment_type}</Badge>
+                </TableCell>
+                <TableCell>
+                  {isBooked ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="muted">Booked</Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm whitespace-pre-wrap text-left">
+                        {tooltipText}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Badge variant="success">Available</Badge>
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                   {formatDateTime(load.pickup_datetime)}
@@ -161,11 +190,12 @@ export function LoadsTable({ pageSize = 25, onItemsChange }: Props) {
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              )
+            })}
 
           {!isLoading && items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={9} className="px-0 py-0">
+              <TableCell colSpan={10} className="px-0 py-0">
                 <EmptyState
                   icon={Package}
                   title="No loads match these filters"

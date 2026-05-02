@@ -1,6 +1,16 @@
 'use client'
 
-import { Truck, Package, Ruler, Calendar, MapPin, FileText } from 'lucide-react'
+import Link from 'next/link'
+import {
+  Truck,
+  Package,
+  Ruler,
+  Calendar,
+  MapPin,
+  FileText,
+  CheckCircle2,
+  ExternalLink,
+} from 'lucide-react'
 import {
   Sheet,
   SheetBody,
@@ -64,6 +74,41 @@ export function LoadDetailDrawer({ load, open, onOpenChange }: Props) {
         <SheetBody>
           {load && (
             <div className="flex flex-col gap-6">
+              {/* Booking panel — surfaced first when this load is already taken. */}
+              {(load.is_booked ?? false) && (
+                <div className="flex flex-col gap-3 rounded-md border border-[var(--status-positive)]/30 bg-[var(--status-positive)]/10 p-3">
+                  <div className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[var(--status-positive)]">
+                    <CheckCircle2 className="size-3" aria-hidden /> Booking
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <Field label="Booked at" icon={Calendar}>
+                      <span className="font-mono tabular-nums">
+                        {formatDateTime(load.booked_at ?? null)}
+                      </span>
+                    </Field>
+                    <Field label="Booked by" icon={Truck}>
+                      {load.booked_by_mc ? (
+                        <span className="font-mono">MC {load.booked_by_mc}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </Field>
+                    <Field label="Agreed rate" icon={Package}>
+                      <MoneyCell value={load.booked_agreed_rate ?? null} />
+                    </Field>
+                  </div>
+                  {load.booked_by_call_id && (
+                    <Link
+                      href={`/transcripts/${load.booked_by_call_id}`}
+                      className="inline-flex items-center gap-1 self-start text-xs font-medium text-[var(--status-info)] underline-offset-2 hover:underline"
+                    >
+                      View call transcript
+                      <ExternalLink className="size-3" aria-hidden />
+                    </Link>
+                  )}
+                </div>
+              )}
+
               {/* Headline KPI strip */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-md border border-border bg-card/40 p-3">
