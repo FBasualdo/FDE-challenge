@@ -59,6 +59,29 @@ permissive so the dashboard works without secrets during dev.
 
 ---
 
+## Database migrations (Alembic)
+
+The backend's schema is managed by Alembic. On boot the lifespan hook
+detects the DB state and either applies pending migrations, stamps an
+existing unmanaged schema as the baseline (the path used the first time
+this lands on the live Railway DB), or applies the baseline on a fresh
+DB — whichever is appropriate. No manual step on deploy.
+
+To change the schema, edit the ORM model, then:
+
+```bash
+cd backend
+uv run alembic revision --autogenerate -m "describe change"   # generate revision
+# Review the generated file in alembic/versions/, edit if autogenerate missed something
+uv run alembic upgrade head                                    # apply locally
+# Commit the revision file. Next deploy auto-applies on boot.
+```
+
+Other useful commands: `uv run alembic current`, `uv run alembic history`,
+`uv run alembic downgrade -1`.
+
+---
+
 ## Repo layout
 
 ```
@@ -67,6 +90,8 @@ permissive so the dashboard works without secrets during dev.
 │   ├── Dockerfile
 │   ├── railway.json
 │   ├── pyproject.toml / uv.lock
+│   ├── alembic.ini
+│   ├── alembic/                # migrations (env.py + versions/)
 │   ├── scripts/entrypoint.sh
 │   └── src/
 │       ├── main.py

@@ -199,16 +199,48 @@ JSONB extraction (`load->>'loadboard_rate'::numeric`), and
 Also add an `ix_calls_started_at_outcome` composite index (the current
 `created_at` index is unused).
 
-## R-003 — Alembic migrations
+## R-003 — Alembic migrations — DONE
 
-**Why.** `Base.metadata.create_all` in the lifespan works for v1 single
-replica, but: (a) breaks under concurrent boot of multiple replicas;
-(b) schema diffs are invisible — every refactor mutates the table silently;
-(c) seed-if-empty self-heals nothing if a partial seed gets stuck.
+**Why.** `Base.metadata.create_all` + the `_PENDING_MIGRATIONS` shotgun in
+`db.py` worked for v1 single replica, but: (a) broke under concurrent boot
+of multiple replicas; (b) schema diffs were invisible — every refactor
+mutated the table silently; (c) `_PENDING_MIGRATIONS` only ever grew, with
+no rollback path and no audit trail.
 
-**Plan.** Alembic with auto-generate, run in a one-shot Railway pre-deploy
-job. Replace the seed step with `INSERT ... ON CONFLICT (load_id) DO
-NOTHING` so it's idempotent and self-healing.
+**Decision.** Introduced Alembic (async template) into `backend/alembic/`.
+The lifespan hook now calls `init_db()`, which inspects the connected DB
+and dispatches to one of three smart-bootstrap branches:
+
+  1. `alembic_version` table present → `alembic upgrade head` (managed DB —
+     applies any new migrations on every boot).
+  2. Owned tables present but no `alembic_version` → `alembic stamp head`
+     (existing prod takeover; idempotent — does NOT touch the schema, just
+     marks it as managed at the baseline revision).
+  3. Empty database → `alembic upgrade head` (fresh local dev / new env —
+     baseline migration creates everything).
+
+Alembic is invoked through its Python API (`alembic.config.Config` +
+`alembic.command.upgrade/stamp`) inside a `connection.run_sync` callback,
+so the existing async lifespan stays async. `_PENDING_MIGRATIONS` is gone;
+all of its DDL is baked into the baseline migration
+(`c7239d1fc057_baseline_schema.py`).
+
+**Workflow.**
+- Day-to-day schema change: edit the ORM model →
+  `cd backend && uv run alembic revision --autogenerate -m "describe change"`
+  → review the generated revision file (autogenerate is a hint, not gospel)
+  → commit → next deploy auto-applies on boot.
+- Manual upgrade locally: `cd backend && uv run alembic upgrade head`.
+- Rollback last revision: `cd backend && uv run alembic downgrade -1`.
+- Show current revision: `cd backend && uv run alembic current`.
+- Show history: `cd backend && uv run alembic history`.
+
+**Consequences.** Schema is now self-documenting (one PR per change, with a
+diff and a downgrade path). Multi-replica boot is safe because Alembic
+takes an advisory lock on `alembic_version`. Existing prod DB on Railway
+takes over cleanly on first deploy with zero downtime — `stamp head` is a
+single-row insert. Seed-loads / seed-agent / seed-admin still run after
+the migration step (they're post-schema concerns, not migrations).
 
 ## R-004 — Service module split
 
