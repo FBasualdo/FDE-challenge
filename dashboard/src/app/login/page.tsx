@@ -55,7 +55,7 @@ function LoginForm() {
             alt="HappyRobot"
             width={32}
             height={32}
-            className="size-8 rounded-md ring-1 ring-[var(--status-positive)]/40"
+            className="size-8 rounded-md"
             priority
           />
           <CardTitle>HappyRobot Dashboard</CardTitle>

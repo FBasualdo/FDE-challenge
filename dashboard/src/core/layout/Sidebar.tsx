@@ -132,7 +132,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             alt="HappyRobot"
             width={32}
             height={32}
-            className="size-8 shrink-0 rounded-md ring-1 ring-[var(--status-positive)]/40"
+            className="size-8 shrink-0 rounded-md"
             priority
           />
           {!collapsed && (

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { apiFetch, swrFetcher } from '@/lib/api'
 import { useFilters, filtersToQuery, filtersToSearchString } from '@/modules/transcripts/hooks/useFilters'
 import { ExportButton } from '@/core/ui-extras/ExportButton'
@@ -102,13 +103,14 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
                 <TableHead>Outcome</TableHead>
                 <TableHead>Sentiment</TableHead>
                 <TableHead className="text-right">Duration</TableHead>
+                <TableHead className="text-right">Transcript</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading &&
                 Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={`s-${i}`}>
-                    {Array.from({ length: showAgentColumn ? 10 : 9 }).map((__, j) => (
+                    {Array.from({ length: showAgentColumn ? 11 : 10 }).map((__, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -120,12 +122,7 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
                 items.map((call) => (
                   <TableRow key={call.call_id}>
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                      <Link
-                        href={`/transcripts/${call.call_id}`}
-                        className="text-foreground hover:underline underline-offset-4"
-                      >
-                        {formatDateTime(call.started_at)}
-                      </Link>
+                      {formatDateTime(call.started_at)}
                     </TableCell>
                     {showAgentColumn && (
                       <TableCell className="text-xs">
@@ -161,12 +158,20 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
                     <TableCell className="text-right">
                       <DurationCell seconds={call.duration_seconds} />
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/transcripts/${call.call_id}`}>
+                          View
+                          <ArrowRight className="ml-1 size-3" aria-hidden />
+                        </Link>
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
 
               {!isLoading && items.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={showAgentColumn ? 10 : 9} className="px-0 py-0">
+                  <TableCell colSpan={showAgentColumn ? 11 : 10} className="px-0 py-0">
                     <EmptyState
                       icon={MessageSquare}
                       title="No calls match these filters"
