@@ -57,49 +57,64 @@ export function TranscriptDetail({ callId }: Props) {
   return (
     <Tabs defaultValue="overview">
       <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="tools">
-          Tools
+        <TabsTrigger value="overview">
+          Overview
           {tools.length > 0 && (
             <span className="ml-1.5 rounded-sm bg-muted px-1 py-px font-mono text-[10px] tabular-nums text-muted-foreground">
-              {tools.length}
+              {tools.length} tool{tools.length === 1 ? '' : 's'}
             </span>
           )}
         </TabsTrigger>
         <TabsTrigger value="transcript">Transcript</TabsTrigger>
-        <TabsTrigger value="analysis">Analysis</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="mt-4">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <CarrierPanel call={data} />
-          <LoadPanel call={data} />
-          <NegotiationPanel call={data} />
-        </div>
-      </TabsContent>
-
-      <TabsContent value="tools" className="mt-4">
-        {tools.length === 0 ? (
-          <EmptyState
-            icon={Wrench}
-            title="No tool invocations"
-            description="The agent didn't invoke any backend tools during this call."
-          />
-        ) : (
-          <div className="flex flex-col gap-2">
-            {tools.map((t, i) => (
-              <ToolInvocationCard key={`${t.name}-${i}`} invocation={t} index={i} />
-            ))}
+        <div className="flex flex-col gap-6">
+          {/* Top row: carrier, load, negotiation snapshots. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <CarrierPanel call={data} />
+            <LoadPanel call={data} />
+            <NegotiationPanel call={data} />
           </div>
-        )}
+
+          {/* Two-column block: tool invocations on the left, post-call analysis on the right. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <section className="flex flex-col gap-2">
+              <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Wrench className="size-4" aria-hidden />
+                Tool invocations
+                {tools.length > 0 && (
+                  <span className="font-mono text-[11px] tabular-nums">({tools.length})</span>
+                )}
+              </h3>
+              {tools.length === 0 ? (
+                <EmptyState
+                  icon={Wrench}
+                  title="No tool invocations"
+                  description="The agent didn't invoke any backend tools during this call."
+                  className="py-6"
+                />
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {tools.map((t, i) => (
+                    <ToolInvocationCard key={`${t.name}-${i}`} invocation={t} index={i} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Post-call analysis
+              </h3>
+              <AnalysisPanel call={data} />
+            </section>
+          </div>
+        </div>
       </TabsContent>
 
       <TabsContent value="transcript" className="mt-4">
         <ChatLog messages={parseTranscript(data.transcript)} />
-      </TabsContent>
-
-      <TabsContent value="analysis" className="mt-4">
-        <AnalysisPanel call={data} />
       </TabsContent>
     </Tabs>
   )
