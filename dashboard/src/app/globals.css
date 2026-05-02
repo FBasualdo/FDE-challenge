@@ -1,5 +1,5 @@
 /*
- * Tailwind v4 entry. Neutral shadcn theme — dark by default, light optional.
+ * Tailwind v4 entry. HappyRobot brand palette — dark by default, light fallback.
  */
 @import "tailwindcss";
 @import "../../node_modules/tw-animate-css/dist/tw-animate.css";
@@ -76,56 +76,56 @@
 
 :root,
 [data-theme="dark"] {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.27 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.27 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.27 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 18%);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --background: #0E0D0C;
+  --foreground: #F5F5F4;
+  --card: #15140F;
+  --card-foreground: #F5F5F4;
+  --popover: #15140F;
+  --popover-foreground: #F5F5F4;
+  --primary: #72FF88;
+  --primary-foreground: #0E0D0C;
+  --secondary: #1C1B17;
+  --secondary-foreground: #F5F5F4;
+  --muted: #1C1B17;
+  --muted-foreground: #A1A1A1;
+  --accent: #4d65ff;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FA4B52;
+  --border: rgba(255, 255, 255, 0.10);
+  --input: rgba(255, 255, 255, 0.14);
+  --ring: #72FF88;
+  --chart-1: #72FF88;
+  --chart-2: #0ABB2D;
+  --chart-3: #4d65ff;
+  --chart-4: #A1A1A1;
+  --chart-5: #FA4B52;
   --radius: 0.625rem;
 }
 
 [data-theme="light"] {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --background: #FFFFFF;
+  --foreground: #0E0D0C;
+  --card: #FFFFFF;
+  --card-foreground: #0E0D0C;
+  --popover: #FFFFFF;
+  --popover-foreground: #0E0D0C;
+  --primary: #0ABB2D;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F4F2;
+  --secondary-foreground: #0E0D0C;
+  --muted: #F4F4F2;
+  --muted-foreground: #757575;
+  --accent: #4d65ff;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FA4B52;
+  --border: rgba(14, 14, 12, 0.12);
+  --input: rgba(14, 14, 12, 0.16);
+  --ring: #0ABB2D;
+  --chart-1: #0ABB2D;
+  --chart-2: #72FF88;
+  --chart-3: #4d65ff;
+  --chart-4: #757575;
+  --chart-5: #FA4B52;
 }
 
 @layer base {
