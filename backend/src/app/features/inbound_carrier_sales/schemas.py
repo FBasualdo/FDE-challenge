@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+import json
+from datetime import date, datetime, timedelta, timezone
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -126,9 +127,9 @@ class CallNegotiation(BaseModel):
 
 class IngestCallRequest(BaseModel):
     call_id: str = Field(min_length=1, max_length=128)
-    started_at: AwareDatetime
-    ended_at: AwareDatetime
-    duration_seconds: int = Field(ge=0, le=24 * 3600)
+    started_at: AwareDatetime | None = None
+    ended_at: AwareDatetime | None = None
+    duration_seconds: int = Field(default=0, ge=0, le=24 * 3600)
     carrier: CallCarrier | None = None
     load: CallLoad | None = None
     negotiation: CallNegotiation | None = None
@@ -136,6 +137,38 @@ class IngestCallRequest(BaseModel):
     sentiment: CallSentiment
     transcript: str | None = Field(default=None, max_length=200_000)
     recording_url: str | None = Field(default=None, max_length=2_048)
+
+    @field_validator("load", mode="before")
+    @classmethod
+    def _coerce_load(cls, v: Any) -> Any:
+        # Voice platforms sometimes JSON-encode array fields as strings, or
+        # pass the entire `loads[...]` array instead of a single load. Be
+        # tolerant: parse strings, unwrap arrays, accept dicts as-is.
+        if v is None or isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except (ValueError, TypeError):
+                return None
+        if isinstance(v, list):
+            return v[0] if v else None
+        return v
+
+    @model_validator(mode="after")
+    def _fill_timestamps(self) -> "IngestCallRequest":
+        # Defaults for callers (e.g. HappyRobot tools) that don't have call
+        # start/end as platform variables. We synthesize a window from the
+        # duration so calls_by_day still bucketizes them correctly.
+        if self.started_at is None and self.ended_at is None:
+            now = datetime.now(timezone.utc)
+            self.ended_at = now
+            self.started_at = now - timedelta(seconds=self.duration_seconds or 0)
+        elif self.started_at is None:
+            self.started_at = self.ended_at - timedelta(seconds=self.duration_seconds or 0)
+        elif self.ended_at is None:
+            self.ended_at = self.started_at + timedelta(seconds=self.duration_seconds or 0)
+        return self
 
 
 class IngestCallResponse(BaseModel):

@@ -100,7 +100,7 @@ async def ingest_call(
     session: SessionDep,
     _: None = RequireApiKey,
 ) -> IngestCallResponse:
-    if request.ended_at < request.started_at:
+    if request.started_at and request.ended_at and request.ended_at < request.started_at:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="ended_at must be on or after started_at",
