@@ -182,7 +182,7 @@ BASE_URL=http://localhost:8000 API_KEY=$API_KEY \\
 
 ## Repo conventions
 
-- \`backend/src/app/built_in/\` — reusable infrastructure (auth, health, llm). Don't put project-specific logic here.
+- \`backend/src/app/built_in/\` — reusable infrastructure (auth, health). Don't put project-specific logic here.
 - \`backend/src/app/features/\` — project features. Each one is its own module with \`router.py\` (thin), \`service.py\` (logic), \`schemas.py\` (Pydantic), \`models.py\` (SQLAlchemy ORM, optional). Routers auto-discovered by \`bootstrap.py\` — no manual wiring.
 - \`dashboard/src/core/\` — shared layout, auth, API client. \`dashboard/src/modules/\` — feature components grouped by section.
 `
