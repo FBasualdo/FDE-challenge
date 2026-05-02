@@ -100,3 +100,24 @@ export function filtersToQuery(
     ...extra,
   }
 }
+
+/**
+ * Serialise the filter state to a URL search string ("a=1&b=2", no leading "?")
+ * matching the backend's /calls query-param contract — used by the Excel export.
+ */
+export function filtersToSearchString(
+  f: TranscriptFilters,
+  extra: Record<string, string | undefined> = {},
+): string {
+  const sp = new URLSearchParams()
+  for (const v of f.outcome) sp.append('outcome', v)
+  for (const v of f.sentiment) sp.append('sentiment', v)
+  if (f.mc) sp.set('mc_number', f.mc)
+  if (f.q) sp.set('q', f.q)
+  if (f.from) sp.set('date_from', f.from)
+  if (f.to) sp.set('date_to', f.to)
+  for (const [k, v] of Object.entries(extra)) {
+    if (v !== undefined && v !== '') sp.set(k, v)
+  }
+  return sp.toString()
+}

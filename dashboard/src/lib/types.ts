@@ -236,3 +236,52 @@ export interface NegotiationStats {
     savings_count: number
   }
 }
+
+// ---------------------------------------------------------------------------
+// Loads catalog — GET /loads/catalog
+// ---------------------------------------------------------------------------
+
+export interface LoadCatalogItem {
+  load_id: string
+  origin: string
+  destination: string
+  pickup_datetime: string
+  delivery_datetime: string
+  equipment_type: string
+  loadboard_rate: number
+  notes?: string | null
+  weight: number
+  commodity_type?: string | null
+  num_of_pieces: number
+  miles: number
+  dimensions?: string | null
+  pitch_summary: string
+}
+
+export interface LoadsCatalogResponse {
+  items: LoadCatalogItem[]
+  next_cursor?: string | null
+  total: number
+}
+
+// ---------------------------------------------------------------------------
+// FMCSA verifications — GET /verifications
+// ---------------------------------------------------------------------------
+
+export interface VerificationDetail {
+  id: number
+  mc_number: string
+  eligible: boolean
+  carrier_name?: string | null
+  dot_number?: string | null
+  status?: string | null
+  reason?: string | null
+  raw_response?: Record<string, unknown> | null
+  checked_at: string
+}
+
+export interface VerificationsResponse {
+  items: VerificationDetail[]
+  next_cursor?: string | null
+  total: number
+}

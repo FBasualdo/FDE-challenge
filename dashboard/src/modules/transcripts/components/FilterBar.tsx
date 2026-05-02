@@ -66,7 +66,12 @@ function MultiSelect({ label, options, value, onChange }: MultiSelectProps) {
   )
 }
 
-export function FilterBar() {
+interface FilterBarProps {
+  /** Optional slot rendered on the right edge of the filter row (e.g. Export button). */
+  rightSlot?: React.ReactNode
+}
+
+export function FilterBar({ rightSlot }: FilterBarProps = {}) {
   const { filters, setFilters, clear, hasActiveFilters } = useFilters()
   // Local mirror for text inputs so we can debounce updates to the URL.
   const [mc, setMc] = useState(filters.mc)
@@ -169,11 +174,13 @@ export function FilterBar() {
         </div>
 
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clear} className="ml-auto text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" onClick={clear} className="text-muted-foreground hover:text-foreground">
             <X />
             Clear filters
           </Button>
         )}
+
+        {rightSlot && <div className="ml-auto flex items-center gap-2">{rightSlot}</div>}
       </div>
     </div>
   )

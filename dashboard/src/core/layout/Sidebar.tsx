@@ -15,6 +15,8 @@ import {
   Users,
   Route,
   Handshake,
+  Package,
+  ShieldCheck,
 } from 'lucide-react'
 import { ThemeToggle } from '@/core/theme/ThemeToggle'
 import { useAuth } from '@/core/auth/useAuth'
@@ -57,6 +59,8 @@ function isGroup(item: NavItem): item is NavGroup {
 const NAV: NavItem[] = [
   { href: '/agents', label: 'Agents', icon: Bot },
   { href: '/transcripts', label: 'Transcripts', icon: MessageSquare },
+  { href: '/loads', label: 'Loads', icon: Package },
+  { href: '/compliance', label: 'Compliance', icon: ShieldCheck },
   {
     basePath: '/metrics',
     label: 'Analytics',

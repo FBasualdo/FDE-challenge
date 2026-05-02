@@ -5,7 +5,8 @@ import Link from 'next/link'
 import useSWR from 'swr'
 import { MessageSquare } from 'lucide-react'
 import { apiFetch, swrFetcher } from '@/lib/api'
-import { useFilters, filtersToQuery } from '@/modules/transcripts/hooks/useFilters'
+import { useFilters, filtersToQuery, filtersToSearchString } from '@/modules/transcripts/hooks/useFilters'
+import { ExportButton } from '@/core/ui-extras/ExportButton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { OutcomeBadge } from '@/core/ui-extras/OutcomeBadge'
@@ -52,7 +53,6 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
       setItems(data.items ?? [])
       setCursor(data.next_cursor ?? null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey, data])
 
   async function loadMore() {
@@ -71,9 +71,19 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
     }
   }
 
+  const exportQuery = filtersToSearchString(filters, agentId ? { agent_id: agentId } : {})
+
   return (
     <div className="flex flex-col gap-3">
-      <FilterBar />
+      <FilterBar
+        rightSlot={
+          <ExportButton
+            endpoint="/calls/export.xlsx"
+            query={exportQuery}
+            disabled={items.length === 0}
+          />
+        }
+      />
 
       {error && <ErrorState title="Could not load calls" error={error} onRetry={() => void mutate()} />}
 
