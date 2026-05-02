@@ -108,18 +108,18 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
 
               {!isLoading &&
                 items.map((call) => (
-                  <TableRow key={call.id}>
+                  <TableRow key={call.call_id}>
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                       <Link
-                        href={`/transcripts/${call.id}`}
+                        href={`/transcripts/${call.call_id}`}
                         className="text-foreground hover:underline underline-offset-4"
                       >
-                        {formatDateTime(call.started_at ?? call.created_at)}
+                        {formatDateTime(call.started_at)}
                       </Link>
                     </TableCell>
                     {showAgentColumn && (
                       <TableCell className="text-xs">
-                        {call.agent_name ?? call.agent_slug ?? '—'}
+                        {call.agent_name ?? call.agent_id ?? '—'}
                       </TableCell>
                     )}
                     <TableCell>
@@ -137,7 +137,7 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
                       <MoneyCell value={call.loadboard_rate} tone="muted" />
                     </TableCell>
                     <TableCell className="text-right">
-                      <MoneyCell value={call.agreed_rate} tone={call.outcome === 'Booked' ? 'positive' : 'default'} />
+                      <MoneyCell value={call.final_agreed_rate} tone={call.outcome === 'Booked' ? 'positive' : 'default'} />
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
                       {call.num_negotiation_rounds ?? '—'}

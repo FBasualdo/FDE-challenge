@@ -42,31 +42,35 @@ export function MetricsPage() {
             <KpiCard
               icon={Phone}
               label="Total calls"
-              value={formatNumber(data.total_calls ?? 0)}
+              value={formatNumber(data.totals.total_calls)}
             />
             <KpiCard
               icon={CheckCircle2}
               label="Booked"
-              value={formatNumber(data.booked_calls ?? 0)}
+              value={formatNumber(data.totals.booked_calls)}
               tone="positive"
             />
             <KpiCard
               icon={Percent}
               label="Booking rate"
-              value={formatPercent(data.booking_rate ?? null)}
+              value={formatPercent(data.totals.booking_rate)}
               tone="positive"
             />
             <KpiCard
               icon={DollarSign}
               label="Revenue negotiated"
-              value={formatMoney(data.total_revenue_negotiated ?? null)}
+              value={formatMoney(data.totals.total_revenue_negotiated)}
               tone="accent"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <OutcomesPie data={data.outcomes} />
-            <SentimentBars data={data.sentiments} />
+            <OutcomesPie
+              data={Object.entries(data.outcomes_distribution).map(([name, value]) => ({ name, value }))}
+            />
+            <SentimentBars
+              data={Object.entries(data.quality.sentiment_distribution).map(([name, value]) => ({ name, value }))}
+            />
           </div>
 
           <CallsByDayLine data={data.calls_by_day} />
@@ -76,15 +80,15 @@ export function MetricsPage() {
               icon={ListChecks}
               label="Avg negotiation rounds"
               value={
-                data.avg_negotiation_rounds !== undefined && data.avg_negotiation_rounds !== null
-                  ? data.avg_negotiation_rounds.toFixed(1)
+                data.negotiation.avg_rounds_to_close !== null
+                  ? data.negotiation.avg_rounds_to_close.toFixed(1)
                   : '—'
               }
             />
             <KpiCard
               icon={TrendingUp}
               label="Avg margin vs loadboard"
-              value={formatPercent(data.avg_margin_vs_loadboard ?? null)}
+              value={formatPercent(data.negotiation.avg_margin_vs_loadboard)}
             />
           </div>
         </div>

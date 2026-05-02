@@ -9,6 +9,11 @@ interface Props {
 }
 
 export function LoadPanel({ call }: Props) {
+  const loadId = call.load?.load_id as string | undefined
+  const origin = call.load?.origin as string | undefined
+  const destination = call.load?.destination as string | undefined
+  const loadboardRate =
+    typeof call.load?.loadboard_rate === 'number' ? (call.load.loadboard_rate as number) : null
   return (
     <Card>
       <CardHeader>
@@ -18,9 +23,9 @@ export function LoadPanel({ call }: Props) {
         </div>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-3 text-sm">
-        <KV label="Load ID" value={call.load_id ? <span className="font-mono">{call.load_id}</span> : '—'} />
-        <KV label="Lane" value={<LaneCell origin={call.origin} destination={call.destination} />} />
-        <KV label="Loadboard rate" value={<MoneyCell value={call.loadboard_rate} tone="muted" />} />
+        <KV label="Load ID" value={loadId ? <span className="font-mono">{loadId}</span> : '—'} />
+        <KV label="Lane" value={<LaneCell origin={origin} destination={destination} />} />
+        <KV label="Loadboard rate" value={<MoneyCell value={loadboardRate} tone="muted" />} />
       </CardContent>
     </Card>
   )

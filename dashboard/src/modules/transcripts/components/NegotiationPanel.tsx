@@ -10,6 +10,19 @@ interface Props {
 
 export function NegotiationPanel({ call }: Props) {
   const rounds = call.negotiation_rounds ?? []
+  const carrierQuoted =
+    typeof call.analysis?.carrier_quoted_rate === 'number'
+      ? (call.analysis.carrier_quoted_rate as number)
+      : null
+  const agreedRate =
+    typeof call.negotiation?.final_agreed_rate === 'number'
+      ? (call.negotiation.final_agreed_rate as number)
+      : null
+  const numRounds =
+    typeof call.negotiation?.rounds === 'number'
+      ? (call.negotiation.rounds as number)
+      : rounds.length || null
+
   return (
     <Card>
       <CardHeader>
@@ -25,30 +38,26 @@ export function NegotiationPanel({ call }: Props) {
         </div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">Carrier quoted</span>
-          <MoneyCell value={call.carrier_quoted_rate} tone="muted" />
+          <MoneyCell value={carrierQuoted} tone="muted" />
         </div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">Agreed rate</span>
-          <MoneyCell value={call.agreed_rate} tone={call.outcome === 'Booked' ? 'positive' : 'default'} />
+          <MoneyCell value={agreedRate} tone={call.outcome === 'Booked' ? 'positive' : 'default'} />
         </div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">Rounds</span>
-          <span className="font-mono text-sm tabular-nums text-foreground">
-            {call.num_negotiation_rounds ?? rounds.length ?? '—'}
-          </span>
+          <span className="font-mono text-sm tabular-nums text-foreground">{numRounds ?? '—'}</span>
         </div>
 
         {rounds.length > 0 && (
           <div className="mt-2 flex flex-col gap-1.5 border-t border-border pt-2">
             {rounds.map((r, i) => (
-              <div key={r.id ?? i} className="flex items-center gap-2 text-xs">
-                <span className="font-mono text-muted-foreground w-6">#{r.round_number ?? i + 1}</span>
+              <div key={`${r.round}-${i}`} className="flex items-center gap-2 text-xs">
+                <span className="font-mono text-muted-foreground w-6">#{r.round}</span>
                 <MoneyCell value={r.carrier_offer} tone="muted" precise />
                 <MoveRight className="size-3 text-muted-foreground" aria-hidden />
-                <MoneyCell value={r.agent_counter} tone="default" precise />
-                {r.decision && (
-                  <span className="ml-auto text-[11px] text-muted-foreground">{r.decision}</span>
-                )}
+                <MoneyCell value={r.broker_price ?? null} tone="default" precise />
+                <span className="ml-auto text-[11px] text-muted-foreground">{r.action}</span>
               </div>
             ))}
           </div>

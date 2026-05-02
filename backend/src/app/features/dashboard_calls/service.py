@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.app.features.agents.models import AgentORM
 from src.app.features.inbound_carrier_sales.models import (
     CallORM,
     NegotiationRoundORM,
@@ -45,14 +46,17 @@ def _negotiation_field(call: CallORM, key: str) -> Any:
     return call.negotiation.get(key)
 
 
-def _to_summary(call: CallORM) -> CallSummary:
+def _to_summary(call: CallORM, agent_name: str | None = None) -> CallSummary:
     transcript = call.transcript or ""
     preview = transcript[:_PREVIEW_LEN] if transcript else None
 
     final = _negotiation_field(call, "final_agreed_rate")
+    rounds = _negotiation_field(call, "rounds")
+    loadboard = _load_field(call, "loadboard_rate")
     return CallSummary(
         call_id=call.call_id,
         agent_id=call.agent_id,
+        agent_name=agent_name,
         started_at=call.started_at,
         duration_seconds=call.duration_seconds,
         outcome=call.outcome,
@@ -60,7 +64,11 @@ def _to_summary(call: CallORM) -> CallSummary:
         carrier_name=_carrier_field(call, "carrier_name"),
         mc_number=_carrier_field(call, "mc_number"),
         load_id=_load_field(call, "load_id"),
+        origin=_load_field(call, "origin"),
+        destination=_load_field(call, "destination"),
+        loadboard_rate=float(loadboard) if loadboard is not None else None,
         final_agreed_rate=float(final) if final is not None else None,
+        num_negotiation_rounds=int(rounds) if rounds is not None else None,
         transcript_preview=preview,
     )
 
@@ -120,8 +128,20 @@ async def list_calls(
     page = rows[:limit]
     next_cursor = page[-1].started_at.isoformat() if has_more and page else None
 
+    # Resolve agent_id → name in a single query so the table can show the
+    # human-friendly label without an N+1.
+    agent_ids = {r.agent_id for r in page if r.agent_id}
+    agent_names: dict[str, str] = {}
+    if agent_ids:
+        rows_agents = (
+            (await session.execute(select(AgentORM).where(AgentORM.slug.in_(agent_ids))))
+            .scalars()
+            .all()
+        )
+        agent_names = {a.slug: a.name for a in rows_agents}
+
     return CallListResponse(
-        items=[_to_summary(r) for r in page],
+        items=[_to_summary(r, agent_name=agent_names.get(r.agent_id)) for r in page],
         next_cursor=next_cursor,
         total=total,
     )

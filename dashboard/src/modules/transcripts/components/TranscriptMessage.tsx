@@ -1,16 +1,23 @@
 import { Bot, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { formatDateTime } from '@/lib/format'
 import type { TranscriptMessage as Msg } from '@/lib/types'
 
 interface Props {
   message: Msg
 }
 
+function formatOffset(ms: number | null | undefined): string | null {
+  if (typeof ms !== 'number') return null
+  const totalSeconds = Math.floor(ms / 1000)
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
 export function TranscriptMessage({ message }: Props) {
   const isUser = message.role === 'user'
   const isAssistant = message.role === 'assistant'
-  const ts = message.timestamp ?? message.created_at
+  const offset = formatOffset(message.start)
   const Icon = isUser ? User : Bot
   const speaker = isUser ? 'Carrier' : isAssistant ? 'Agent' : message.role
 
@@ -30,7 +37,7 @@ export function TranscriptMessage({ message }: Props) {
       <div className={cn('flex max-w-[80%] flex-col gap-1', isUser && 'items-end')}>
         <div className={cn('flex items-center gap-2 text-[11px] text-muted-foreground', isUser && 'flex-row-reverse')}>
           <span className="font-medium uppercase tracking-wide">{speaker}</span>
-          {ts && <span>{formatDateTime(ts)}</span>}
+          {offset && <span className="font-mono tabular-nums">{offset}</span>}
         </div>
         <div
           className={cn(

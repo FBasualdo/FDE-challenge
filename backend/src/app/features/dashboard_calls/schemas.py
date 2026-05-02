@@ -13,6 +13,7 @@ class CallSummary(BaseModel):
 
     call_id: str
     agent_id: str
+    agent_name: str | None = None
     started_at: datetime
     duration_seconds: int
     outcome: str
@@ -20,7 +21,11 @@ class CallSummary(BaseModel):
     carrier_name: str | None = None
     mc_number: str | None = None
     load_id: str | None = None
+    origin: str | None = None
+    destination: str | None = None
+    loadboard_rate: float | None = None
     final_agreed_rate: float | None = None
+    num_negotiation_rounds: int | None = None
     transcript_preview: str | None = None
 
 

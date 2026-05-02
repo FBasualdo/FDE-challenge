@@ -13,10 +13,20 @@ import { NegotiationPanel } from './NegotiationPanel'
 import { AnalysisPanel } from './AnalysisPanel'
 import { ChatLog } from './ChatLog'
 import { ToolInvocationCard } from './ToolInvocationCard'
-import type { CallDetail } from '@/lib/types'
+import type { CallDetail, TranscriptMessage } from '@/lib/types'
 
 interface Props {
   callId: string
+}
+
+function parseTranscript(raw: string | null | undefined): TranscriptMessage[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as TranscriptMessage[]) : []
+  } catch {
+    return []
+  }
 }
 
 export function TranscriptDetail({ callId }: Props) {
@@ -78,18 +88,14 @@ export function TranscriptDetail({ callId }: Props) {
         ) : (
           <div className="flex flex-col gap-2">
             {tools.map((t, i) => (
-              <ToolInvocationCard
-                key={t.id ?? `${t.tool_name}-${i}`}
-                invocation={t}
-                index={i}
-              />
+              <ToolInvocationCard key={`${t.name}-${i}`} invocation={t} index={i} />
             ))}
           </div>
         )}
       </TabsContent>
 
       <TabsContent value="transcript" className="mt-4">
-        <ChatLog messages={data.transcript} />
+        <ChatLog messages={parseTranscript(data.transcript)} />
       </TabsContent>
 
       <TabsContent value="analysis" className="mt-4">

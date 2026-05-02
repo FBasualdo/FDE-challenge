@@ -42,8 +42,8 @@ export function AgentKpiRow({ agentSlug }: Props) {
   )
 
   const callsToday = today?.total ?? today?.items?.length ?? null
-  const bookingRate = summary?.booking_rate ?? null
-  const revenue = summary?.total_revenue_negotiated ?? null
+  const bookingRate = summary?.totals.booking_rate ?? null
+  const revenue = summary?.totals.total_revenue_negotiated ?? null
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

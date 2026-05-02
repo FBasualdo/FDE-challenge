@@ -20,6 +20,8 @@ function VerificationStatus({ status }: { status?: string | null }) {
 
 export function CarrierPanel({ call }: Props) {
   const verification = call.verifications?.[0]
+  const carrierName = (call.carrier?.carrier_name as string | undefined) ?? verification?.carrier_name ?? '—'
+  const mcNumber = (call.carrier?.mc_number as string | undefined) ?? verification?.mc_number ?? '—'
   return (
     <Card>
       <CardHeader>
@@ -29,8 +31,8 @@ export function CarrierPanel({ call }: Props) {
         </div>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-3 text-sm">
-        <KV label="Name" value={call.carrier_name ?? verification?.legal_name ?? '—'} />
-        <KV label="MC #" value={call.mc_number ?? verification?.mc_number ?? '—'} mono />
+        <KV label="Name" value={carrierName} />
+        <KV label="MC #" value={mcNumber} mono />
         <KV label="Verification" value={<VerificationStatus status={verification?.status ?? null} />} />
       </CardContent>
     </Card>
