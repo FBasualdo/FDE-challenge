@@ -49,7 +49,7 @@ function LoginForm() {
     <Card className="w-full max-w-sm" size="default">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold">
+          <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold ring-1 ring-[var(--status-positive)]/40">
             HR
           </span>
           <CardTitle>HappyRobot Dashboard</CardTitle>

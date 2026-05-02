@@ -43,7 +43,7 @@ export function ThemeToggle() {
             <DropdownMenuItem
               key={value}
               onSelect={() => setTheme(value)}
-              className={cn(isActive && 'text-accent')}
+              className={cn(isActive && 'font-semibold text-foreground')}
             >
               <Icon aria-hidden="true" />
               {label}

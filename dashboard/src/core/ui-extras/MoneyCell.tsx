@@ -15,8 +15,8 @@ export function MoneyCell({ value, precise, className, tone = 'default' }: Props
     <span
       className={cn(
         'font-mono tabular-nums whitespace-nowrap',
-        tone === 'positive' && 'text-primary',
-        tone === 'negative' && 'text-destructive',
+        tone === 'positive' && 'text-[var(--status-positive)]',
+        tone === 'negative' && 'text-[var(--status-negative)]',
         tone === 'muted' && 'text-muted-foreground',
         className,
       )}

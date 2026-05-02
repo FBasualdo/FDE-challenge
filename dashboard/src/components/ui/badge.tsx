@@ -9,12 +9,17 @@ const badgeVariants = cva(
       variant: {
         default: 'bg-secondary text-secondary-foreground ring-border',
         outline: 'bg-transparent text-foreground ring-border',
-        primary: 'bg-primary/15 text-primary ring-primary/30',
-        success: 'bg-primary/15 text-primary ring-primary/30',
-        warning: 'bg-amber-500/15 text-amber-300 ring-amber-500/30',
-        destructive: 'bg-destructive/15 text-destructive ring-destructive/30',
-        muted: 'bg-muted text-muted-foreground ring-border',
-        accent: 'bg-accent/15 text-accent ring-accent/30',
+        primary: 'bg-foreground/10 text-foreground ring-foreground/20',
+        success:
+          'bg-[var(--status-positive)]/15 text-[var(--status-positive)] ring-[var(--status-positive)]/30',
+        warning:
+          'bg-[var(--chart-5)]/15 text-[var(--chart-5)] ring-[var(--chart-5)]/30',
+        destructive:
+          'bg-[var(--status-negative)]/15 text-[var(--status-negative)] ring-[var(--status-negative)]/30',
+        muted:
+          'bg-[var(--status-neutral)]/15 text-[var(--status-neutral)] ring-[var(--status-neutral)]/30',
+        accent:
+          'bg-[var(--status-info)]/15 text-[var(--status-info)] ring-[var(--status-info)]/30',
       },
     },
     defaultVariants: { variant: 'default' },

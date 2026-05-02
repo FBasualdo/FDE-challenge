@@ -30,7 +30,7 @@ export default function AgentDetailPage({ params }: PageProps) {
           agent ? (
             <Badge variant={agent.is_active ? 'success' : 'muted'}>
               <span
-                className={`size-1.5 rounded-full ${agent.is_active ? 'bg-primary' : 'bg-muted-foreground'}`}
+                className={`size-1.5 rounded-full ${agent.is_active ? 'bg-[var(--status-positive)]' : 'bg-muted-foreground'}`}
                 aria-hidden
               />
               {agent.is_active ? 'Active' : 'Inactive'}

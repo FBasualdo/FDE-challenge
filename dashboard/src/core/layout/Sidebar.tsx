@@ -52,7 +52,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Brand */}
       <div className={cn('flex h-14 items-center border-b border-border px-3', collapsed && 'justify-center px-0')}>
         <Link href="/agents" className="flex items-center gap-2 overflow-hidden">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold">
+          <span className="relative flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold ring-1 ring-[var(--status-positive)]/40">
             HR
           </span>
           {!collapsed && (
@@ -74,7 +74,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 className={cn(
                   'group flex items-center gap-2.5 rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-sm font-medium transition-colors',
                   active
-                    ? 'border-l-primary bg-primary/15 text-primary'
+                    ? 'border-l-[var(--status-positive)] bg-[var(--status-positive)]/10 text-foreground'
                     : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
                   collapsed && 'justify-center px-0',
                 )}

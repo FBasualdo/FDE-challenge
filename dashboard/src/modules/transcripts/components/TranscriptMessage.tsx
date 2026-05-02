@@ -19,7 +19,9 @@ export function TranscriptMessage({ message }: Props) {
       <span
         className={cn(
           'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full ring-1 ring-foreground/10',
-          isUser ? 'bg-accent/15 text-accent' : 'bg-primary/15 text-primary',
+          isUser
+            ? 'bg-[var(--status-info)]/15 text-[var(--status-info)]'
+            : 'bg-muted text-foreground',
         )}
         aria-hidden
       >
@@ -34,7 +36,7 @@ export function TranscriptMessage({ message }: Props) {
           className={cn(
             'rounded-lg px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
             isUser
-              ? 'bg-accent/10 text-foreground ring-1 ring-accent/20'
+              ? 'bg-[var(--status-info)]/10 text-foreground ring-1 ring-[var(--status-info)]/20'
               : 'bg-muted/40 text-foreground ring-1 ring-foreground/5',
           )}
         >

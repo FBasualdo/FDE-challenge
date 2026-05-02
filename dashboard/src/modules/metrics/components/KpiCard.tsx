@@ -19,9 +19,9 @@ export function KpiCard({ label, value, hint, icon: Icon, tone = 'default', clas
           <span
             className={cn(
               'flex size-9 shrink-0 items-center justify-center rounded-md',
-              tone === 'positive' && 'bg-primary/15 text-primary',
-              tone === 'negative' && 'bg-destructive/15 text-destructive',
-              tone === 'accent' && 'bg-accent/15 text-accent',
+              tone === 'positive' && 'bg-[var(--status-positive)]/15 text-[var(--status-positive)]',
+              tone === 'negative' && 'bg-[var(--status-negative)]/15 text-[var(--status-negative)]',
+              tone === 'accent' && 'bg-[var(--status-info)]/15 text-[var(--status-info)]',
               tone === 'default' && 'bg-muted text-muted-foreground',
             )}
           >

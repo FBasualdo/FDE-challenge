@@ -68,7 +68,7 @@ export function JsonViewer({ data, defaultOpen = false, label, className, maxHei
             className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
             aria-label="Copy JSON"
           >
-            {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
+            {copied ? <Check className="size-3.5 text-[var(--status-positive)]" /> : <Copy className="size-3.5" />}
             <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
         )}

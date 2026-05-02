@@ -47,7 +47,7 @@ export function ToolInvocationCard({ invocation, index }: Props) {
         <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
           {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
         </span>
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--status-info)]/15 text-[var(--status-info)]">
           <Wrench className="size-3.5" aria-hidden />
         </span>
         <div className="flex min-w-0 flex-1 items-center gap-2">

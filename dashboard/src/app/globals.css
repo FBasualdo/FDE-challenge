@@ -68,64 +68,81 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-status-positive: var(--status-positive);
+  --color-status-negative: var(--status-negative);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-info: var(--status-info);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
 }
 
+/*
+ * Monochrome palette: black + #FAFAFA. Brand lime is reserved for status
+ * accents (badges, sidebar active rail, success deltas) — never for primary
+ * CTAs. Dark theme is the default.
+ */
 :root,
 [data-theme="dark"] {
   --background: #0E0D0C;
-  --foreground: #F5F5F4;
+  --foreground: #FAFAFA;
   --card: #15140F;
-  --card-foreground: #F5F5F4;
+  --card-foreground: #FAFAFA;
   --popover: #15140F;
-  --popover-foreground: #F5F5F4;
-  --primary: #72FF88;
+  --popover-foreground: #FAFAFA;
+  --primary: #FAFAFA;
   --primary-foreground: #0E0D0C;
   --secondary: #1C1B17;
-  --secondary-foreground: #F5F5F4;
+  --secondary-foreground: #FAFAFA;
   --muted: #1C1B17;
   --muted-foreground: #A1A1A1;
-  --accent: #4d65ff;
-  --accent-foreground: #FFFFFF;
+  --accent: #1C1B17;
+  --accent-foreground: #FAFAFA;
   --destructive: #FA4B52;
-  --border: rgba(255, 255, 255, 0.10);
+  --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.14);
-  --ring: #72FF88;
+  --ring: #FAFAFA;
   --chart-1: #72FF88;
-  --chart-2: #0ABB2D;
-  --chart-3: #4d65ff;
+  --chart-2: #4d65ff;
+  --chart-3: #FA4B52;
   --chart-4: #A1A1A1;
-  --chart-5: #FA4B52;
+  --chart-5: #F59E0B;
+  --status-positive: #72FF88;
+  --status-negative: #FA4B52;
+  --status-neutral: #A1A1A1;
+  --status-info: #4d65ff;
   --radius: 0.625rem;
 }
 
 [data-theme="light"] {
-  --background: #FFFFFF;
+  --background: #FAFAFA;
   --foreground: #0E0D0C;
   --card: #FFFFFF;
   --card-foreground: #0E0D0C;
   --popover: #FFFFFF;
   --popover-foreground: #0E0D0C;
-  --primary: #0ABB2D;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F4F4F2;
+  --primary: #0E0D0C;
+  --primary-foreground: #FAFAFA;
+  --secondary: #F1F1EF;
   --secondary-foreground: #0E0D0C;
-  --muted: #F4F4F2;
+  --muted: #F1F1EF;
   --muted-foreground: #757575;
-  --accent: #4d65ff;
-  --accent-foreground: #FFFFFF;
+  --accent: #F1F1EF;
+  --accent-foreground: #0E0D0C;
   --destructive: #FA4B52;
-  --border: rgba(14, 14, 12, 0.12);
+  --border: rgba(14, 14, 12, 0.08);
   --input: rgba(14, 14, 12, 0.16);
-  --ring: #0ABB2D;
+  --ring: #0E0D0C;
   --chart-1: #0ABB2D;
-  --chart-2: #72FF88;
-  --chart-3: #4d65ff;
+  --chart-2: #4d65ff;
+  --chart-3: #FA4B52;
   --chart-4: #757575;
-  --chart-5: #FA4B52;
+  --chart-5: #D97706;
+  --status-positive: #0ABB2D;
+  --status-negative: #FA4B52;
+  --status-neutral: #757575;
+  --status-info: #4d65ff;
 }
 
 @layer base {

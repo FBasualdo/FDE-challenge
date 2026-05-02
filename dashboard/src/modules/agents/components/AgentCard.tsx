@@ -19,7 +19,7 @@ export function AgentCard({ agent }: Props) {
       <Card className="transition-colors group-hover:ring-foreground/20 group-focus-visible:ring-2 group-focus-visible:ring-ring/60 h-full">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-md bg-primary/15 text-primary">
+            <span className="flex size-8 items-center justify-center rounded-md bg-muted text-foreground ring-1 ring-border">
               <Bot className="size-4" aria-hidden />
             </span>
             <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -28,7 +28,7 @@ export function AgentCard({ agent }: Props) {
                 <span
                   className={cn(
                     'size-1.5 rounded-full',
-                    agent.is_active ? 'bg-primary' : 'bg-muted-foreground',
+                    agent.is_active ? 'bg-[var(--status-positive)]' : 'bg-muted-foreground',
                   )}
                   aria-hidden
                 />
@@ -41,7 +41,7 @@ export function AgentCard({ agent }: Props) {
           )}
         </CardHeader>
         <CardContent>
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary group-hover:gap-1.5 transition-all">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground group-hover:gap-1.5 transition-all">
             View calls
             <ArrowRight className="size-3.5" aria-hidden />
           </span>

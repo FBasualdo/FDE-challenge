@@ -112,7 +112,7 @@ export function TranscriptsTable({ agentId, showAgentColumn = true, pageSize = 2
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                       <Link
                         href={`/transcripts/${call.id}`}
-                        className="text-foreground hover:text-primary"
+                        className="text-foreground hover:underline underline-offset-4"
                       >
                         {formatDateTime(call.started_at ?? call.created_at)}
                       </Link>
