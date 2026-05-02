@@ -40,8 +40,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
-  const initial = (user?.email ?? '').trim().charAt(0).toUpperCase() || 'U'
+  const { signOut } = useAuth()
 
   return (
     <aside
@@ -125,24 +124,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               aria-label="User menu"
             >
               <Avatar className="size-7">
-                <AvatarFallback>{initial}</AvatarFallback>
+                <AvatarFallback>HR</AvatarFallback>
               </Avatar>
               {!collapsed && (
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-xs font-medium text-foreground">
-                    {user?.full_name || user?.email || '—'}
-                  </span>
-                  {user?.full_name && (
-                    <span className="truncate text-[11px] text-muted-foreground">{user.email}</span>
-                  )}
-                </span>
+                <span className="truncate text-xs font-medium text-foreground">Signed in</span>
               )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="min-w-48">
-            <DropdownMenuLabel className="text-foreground normal-case">
-              {user?.email ?? 'Signed in'}
-            </DropdownMenuLabel>
+            <DropdownMenuLabel className="text-foreground normal-case">Signed in</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => void signOut()} variant="destructive">
               <LogOut />

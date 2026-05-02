@@ -4,10 +4,10 @@ import { createContext, useCallback, useContext, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import useSWR, { mutate as globalMutate } from 'swr'
 import { apiFetch, swrFetcher } from '@/lib/api'
-import type { User } from '@/lib/types'
+import type { AuthSession } from '@/lib/types'
 
 interface AuthContextValue {
-  user: User | null
+  authenticated: boolean
   isLoading: boolean
   error: Error | null
   signOut: () => Promise<void>
@@ -20,7 +20,7 @@ const ME_KEY = '/auth/me'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { data, error, isLoading, mutate } = useSWR<User>(ME_KEY, swrFetcher, {
+  const { data, error, isLoading, mutate } = useSWR<AuthSession>(ME_KEY, swrFetcher, {
     shouldRetryOnError: false,
     revalidateOnFocus: false,
   })
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user: data ?? null,
+      authenticated: Boolean(data?.authenticated),
       isLoading,
       error: (error as Error) ?? null,
       signOut,

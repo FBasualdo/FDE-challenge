@@ -15,7 +15,6 @@ function LoginForm() {
   const params = useSearchParams()
   const next = params.get('next') || '/agents'
 
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,17 +26,15 @@ function LoginForm() {
     try {
       await apiFetch<LoginResponse>('/auth/login', {
         method: 'POST',
-        json: { email, password },
+        json: { password },
       })
-      // Cookie was set by the backend; the Next router cache may still have
-      // a stale "redirect to login" — refresh + push together.
       router.replace(next.startsWith('/') ? next : '/agents')
       router.refresh()
     } catch (err) {
       const message =
         err instanceof ApiError
           ? err.status === 401
-            ? 'Invalid email or password.'
+            ? 'Invalid passcode.'
             : err.message
           : err instanceof Error
             ? err.message
@@ -57,29 +54,18 @@ function LoginForm() {
           </span>
           <CardTitle>HappyRobot Dashboard</CardTitle>
         </div>
-        <CardDescription>Sign in to continue.</CardDescription>
+        <CardDescription>Enter the passcode to continue.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Passcode</Label>
             <Input
               id="password"
               type="password"
               autoComplete="current-password"
               required
+              autoFocus
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -90,7 +76,7 @@ function LoginForm() {
               {error}
             </p>
           )}
-          <Button type="submit" disabled={submitting || !email || !password} size="lg">
+          <Button type="submit" disabled={submitting || !password} size="lg">
             {submitting ? (
               <>
                 <Loader2 className="animate-spin" />
