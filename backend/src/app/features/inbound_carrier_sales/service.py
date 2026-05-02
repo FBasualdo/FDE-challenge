@@ -374,6 +374,34 @@ async def ingest_call(session: AsyncSession, request: IngestCallRequest) -> bool
         )
         final_outcome = CallOutcome.NOT_ELIGIBLE
 
+    # Defensive lint: pricing policy v1 caps the agreed rate at loadboard*1.10.
+    # /negotiations/evaluate enforces this server-side, but /calls accepts the
+    # rate the voice agent reports — so if the agent skipped the tool, took a
+    # carrier's word, or hallucinated a number, the persisted rate could
+    # exceed policy. Clamp to the ceiling and log so the metric never reports
+    # premiums above 10%.
+    if (
+        load_payload
+        and negotiation_payload
+        and load_payload.get("loadboard_rate") is not None
+        and negotiation_payload.get("final_agreed_rate") is not None
+    ):
+        listed = float(load_payload["loadboard_rate"])
+        final = float(negotiation_payload["final_agreed_rate"])
+        ceiling = listed * 1.10
+        if listed > 0 and final > ceiling:
+            logger.warning(
+                "ingest_call call=%s final_agreed_rate_above_ceiling → clamping "
+                "%.2f → %.2f (load=%s, listed=%.2f, ceiling=%.2f)",
+                request.call_id,
+                final,
+                round(ceiling, 2),
+                load_payload.get("load_id"),
+                listed,
+                ceiling,
+            )
+            negotiation_payload["final_agreed_rate"] = round(ceiling, 2)
+
     values = {
         "call_id": request.call_id,
         "started_at": request.started_at,
