@@ -123,6 +123,41 @@ Trade-off: argon2id is slower than bcrypt (~50–200ms per verify), which
 is intentional — login is rare. Choosing argon2id over bcrypt reflects
 current OWASP guidance.
 
+## SEC-003 — Drop per-user accounts for a single shared dashboard passcode
+
+**Context.** SEC-002 set up a `users` table with email + argon2id password
+hashes and a `seed_admin_if_needed` bootstrap. In practice the POC only
+ever has one operator (the demo runner), so per-user records, password
+storage, and an admin-seed env-var pair were paying weight for value the
+product doesn't need yet.
+
+**Decision.** Replace the users feature entirely with a single
+`DASHBOARD_PASSWORD` env var:
+
+  - Drop the `users` table (new alembic revision `drop_users_table`,
+    revision id `9cc15ee639a7`). Downgrade re-creates the table verbatim
+    so rollback is functional.
+  - Delete the `src/app/features/users/` module (router, service, models,
+    schemas).
+  - Move auth endpoints to `src/app/built_in/auth/router.py` since auth is
+    a platform concern, not a feature.
+  - `POST /auth/login` accepts `{password}` only and compares it against
+    `settings.dashboard_password` via `secrets.compare_digest`. No password
+    hashing, no DB read.
+  - JWT carries no user identity — `sub` is the literal string
+    `"dashboard"`. `RequireUser` returns a sentinel `Authenticated`
+    dataclass instead of a user row, so endpoints typed as
+    `_user: RequireUser` keep working unchanged.
+  - Boot guard extended: outside LOCAL, refuses to start unless
+    `API_KEY`, `JWT_SECRET`, AND `DASHBOARD_PASSWORD` are all set.
+  - `.env.example` swaps `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` for
+    a single `DASHBOARD_PASSWORD` line.
+
+**Consequences.** No audit trail of *who* logged in — acceptable for a
+single-operator demo. v2 reintroduces a `users` table when the product
+needs RBAC; the alembic downgrade plus a fresh feature module is the
+path. The voice-agent `RequireApiKey` surface is untouched.
+
 ## API-002 — `agent_id` on calls + agents catalog
 
 **Context.** The v2 dashboard lists calls grouped by which voice agent

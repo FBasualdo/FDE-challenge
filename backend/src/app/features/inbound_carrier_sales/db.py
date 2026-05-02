@@ -79,8 +79,9 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 
 # Tables we own. If any of these exist on a DB without `alembic_version`,
 # we assume it's the existing prod schema and stamp it instead of trying
-# to recreate.
-_OWNED_TABLES = ("loads", "verifications", "negotiation_rounds", "calls", "users", "agents")
+# to recreate. (`users` was dropped in revision drop_users_table — we no
+# longer create or check for it.)
+_OWNED_TABLES = ("loads", "verifications", "negotiation_rounds", "calls", "agents")
 
 
 def _alembic_config() -> Config:
@@ -134,8 +135,6 @@ async def init_db() -> None:
     # autogenerate/inspect runs through env.py's import chain.
     from src.app.features.agents import models as agents_models  # noqa: F401
     from src.app.features.agents.service import seed_default_agent_if_needed
-    from src.app.features.users import models as users_models  # noqa: F401
-    from src.app.features.users.service import seed_admin_if_needed
 
     from . import models  # noqa: F401
 
@@ -152,7 +151,6 @@ async def init_db() -> None:
             await _seed_loads(session)
 
         await seed_default_agent_if_needed(session)
-        await seed_admin_if_needed(session)
 
 
 async def _seed_loads(session: AsyncSession) -> None:

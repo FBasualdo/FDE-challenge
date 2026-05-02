@@ -25,7 +25,6 @@ from alembic import context
 from src.app.features.agents import models as _agents_models  # noqa: F401
 from src.app.features.inbound_carrier_sales import models as _ics_models  # noqa: F401
 from src.app.features.inbound_carrier_sales.db import Base
-from src.app.features.users import models as _users_models  # noqa: F401
 from src.settings import get_settings
 
 # Alembic Config object, gives access to values within the .ini file.

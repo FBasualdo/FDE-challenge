@@ -1,8 +1,13 @@
-"""Password hashing (argon2id) and JWT helpers for dashboard auth.
+"""JWT helpers for dashboard auth.
 
 Kept separate from the API-key dependency so the voice-agent surface
 (`X-API-Key`) remains untouched. Dashboard endpoints use JWT (cookie OR
 bearer header) via the `RequireUser` dependency.
+
+POC-scoped: there is no per-user identity. The token's `sub` is the
+literal string `"dashboard"`. Login compares the supplied password
+against `settings.dashboard_password` via `secrets.compare_digest` —
+no passwords are ever stored.
 """
 
 from __future__ import annotations
@@ -11,35 +16,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import jwt
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
 
 from src.settings import get_settings
 
-_hasher = PasswordHasher()
-
 _JWT_ALGORITHM = "HS256"
+_JWT_SUBJECT = "dashboard"
 
 
-def hash_password(plain: str) -> str:
-    return _hasher.hash(plain)
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    try:
-        return _hasher.verify(hashed, plain)
-    except VerifyMismatchError:
-        return False
-    except Exception:
-        return False
-
-
-def encode_token(user_id: str, email: str) -> str:
+def encode_token(subject: str = _JWT_SUBJECT) -> str:
     settings = get_settings()
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
-        "sub": user_id,
-        "email": email,
+        "sub": subject,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=settings.jwt_expires_minutes)).timestamp()),
     }
