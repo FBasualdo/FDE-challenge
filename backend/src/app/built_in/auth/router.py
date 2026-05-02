@@ -38,14 +38,19 @@ class AuthStatus(BaseModel):
 
 def _set_session_cookie(response: Response, token: str) -> None:
     settings = get_settings()
-    secure = settings.env_stage_name != "LOCAL"
+    is_prod = settings.env_stage_name != "LOCAL"
+    # Cross-site cookie support: when the dashboard sits on a different
+    # subdomain than the API (e.g. Railway gives us
+    # fde-...-dashboard.up.railway.app -> fde-....up.railway.app), the
+    # browser only sends the session cookie back if SameSite=None and
+    # Secure=True. Locally we keep SameSite=Lax so HTTP dev still works.
     response.set_cookie(
         key=_COOKIE_NAME,
         value=token,
         max_age=settings.jwt_expires_minutes * 60,
         httponly=True,
-        secure=secure,
-        samesite="lax",
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
         path="/",
     )
 
