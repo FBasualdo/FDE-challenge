@@ -161,8 +161,10 @@ Because the two services live on different \`*.up.railway.app\` subdomains, brow
 
 \`\`\`bash
 cp .env.example .env          # fill values
-docker compose up --build     # backend + dashboard + postgres
+bash dev.sh                   # postgres (docker) + backend + dashboard, hot reload
 \`\`\`
+
+\`dev.sh\` runs Postgres in a docker container, the backend with \`uvicorn --reload\`, and the dashboard with \`next dev --turbopack\`. Ctrl+C stops everything cleanly.
 
 - Backend → \`http://localhost:8000\`
 - Dashboard → \`http://localhost:3000\`
