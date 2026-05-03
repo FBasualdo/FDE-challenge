@@ -4,12 +4,13 @@ import { Suspense, useState } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { mutate } from 'swr'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { apiFetch, ApiError } from '@/lib/api'
-import type { LoginResponse } from '@/lib/types'
+import { apiFetch, ApiError, swrFetcher } from '@/lib/api'
+import type { AuthSession, LoginResponse } from '@/lib/types'
 
 function LoginForm() {
   const router = useRouter()
@@ -27,10 +28,23 @@ function LoginForm() {
     try {
       await apiFetch<LoginResponse>('/auth/login', {
         method: 'POST',
-        json: { password },
+        json: { password: password.trim() },
       })
+      // Verify the cookie actually round-tripped before navigating, and seed
+      // SWR's cache with the result. Without this, AuthProvider on the
+      // destination route either reads a stale 401 from the prior visit or
+      // races with its own /auth/me fetch and bounces back to /login.
+      const session = await mutate<AuthSession>(
+        '/auth/me',
+        () => swrFetcher<AuthSession>('/auth/me'),
+        { revalidate: false },
+      )
+      if (!session?.authenticated) {
+        throw new Error(
+          'Could not establish a session. Your browser may be blocking third-party cookies — please allow them for this site and try again.',
+        )
+      }
       router.replace(next.startsWith('/') ? next : '/metrics')
-      router.refresh()
     } catch (err) {
       const message =
         err instanceof ApiError
