@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { setToken } from '@/core/auth/tokenStore'
 import { apiFetch, ApiError, swrFetcher } from '@/lib/api'
 import type { AuthSession, LoginResponse } from '@/lib/types'
 
@@ -26,23 +27,23 @@ function LoginForm() {
     setSubmitting(true)
     setError(null)
     try {
-      await apiFetch<LoginResponse>('/auth/login', {
+      const { access_token } = await apiFetch<LoginResponse>('/auth/login', {
         method: 'POST',
         json: { password: password.trim() },
       })
-      // Verify the cookie actually round-tripped before navigating, and seed
-      // SWR's cache with the result. Without this, AuthProvider on the
-      // destination route either reads a stale 401 from the prior visit or
-      // races with its own /auth/me fetch and bounces back to /login.
+      // Persist the JWT in localStorage so apiFetch can attach it as a Bearer
+      // header on every subsequent request. We do this BEFORE seeding the
+      // /auth/me cache so the verification call carries the new token.
+      setToken(access_token)
+      // Seed AuthProvider's SWR cache with a verified session, so the
+      // destination route reads a hot 200 instead of refetching and racing.
       const session = await mutate<AuthSession>(
         '/auth/me',
         () => swrFetcher<AuthSession>('/auth/me'),
         { revalidate: false },
       )
       if (!session?.authenticated) {
-        throw new Error(
-          'Could not establish a session. Your browser may be blocking third-party cookies — please allow them for this site and try again.',
-        )
+        throw new Error('Could not establish a session. Please try again.')
       }
       router.replace(next.startsWith('/') ? next : '/metrics')
     } catch (err) {

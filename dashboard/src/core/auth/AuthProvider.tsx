@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo } from 'reac
 import { usePathname, useRouter } from 'next/navigation'
 import useSWR, { mutate as globalMutate } from 'swr'
 import { ApiError, apiFetch, swrFetcher } from '@/lib/api'
+import { clearToken } from '@/core/auth/tokenStore'
 import type { AuthSession } from '@/lib/types'
 
 interface AuthContextValue {
@@ -38,6 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (error instanceof ApiError && error.status === 401) ||
       (data && !data.authenticated)
     if (unauthenticated) {
+      // Drop any stale token so the next /auth/me retry isn't poisoned.
+      clearToken()
       const next = pathname && pathname !== '/login' ? pathname : '/metrics'
       router.replace(`/login?next=${encodeURIComponent(next)}`)
     }
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Best effort — even if the call fails we still want to clear state.
     }
+    clearToken()
     await globalMutate(() => true, undefined, { revalidate: false })
     router.push('/login')
   }, [router])

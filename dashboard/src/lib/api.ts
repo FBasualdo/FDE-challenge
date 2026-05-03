@@ -1,8 +1,15 @@
 /**
- * Tiny fetch wrapper with credentials + JSON + non-2xx error throwing.
- * The backend issues an httpOnly `session` cookie on /auth/login; sending
- * `credentials: 'include'` ensures the browser attaches it on subsequent calls.
+ * Tiny fetch wrapper with JSON handling, non-2xx error throwing, and
+ * automatic `Authorization: Bearer ...` from the token store.
+ *
+ * We attach the JWT as a header (not via cookie) because the dashboard and
+ * the API live on different *.up.railway.app subdomains, which browsers
+ * treat as cross-site — third-party cookies get dropped even when
+ * SameSite=None+Secure. The backend's `RequireUser` dependency accepts
+ * either a Bearer header or the `session` cookie; we use the header path.
  */
+
+import { getToken } from '@/core/auth/tokenStore'
 
 export const API_BASE_URL =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) ||
@@ -52,6 +59,10 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
   const finalHeaders: Record<string, string> = {
     Accept: 'application/json',
     ...(headers as Record<string, string> | undefined),
+  }
+  const token = getToken()
+  if (token && !finalHeaders['Authorization']) {
+    finalHeaders['Authorization'] = `Bearer ${token}`
   }
   let body: BodyInit | undefined
   if (json !== undefined) {
